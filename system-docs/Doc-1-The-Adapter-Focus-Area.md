@@ -17,95 +17,135 @@ The pipeline does four asynchronous things:
 
 Here is how you model the Adapter's configuration to handle variations like `ACT-80` and format the data exactly how the destination wants it. This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
 
+## 1. Top-Level Structure
+
+The schema is divided into **Environment** (Who am I?), **Ingress** (When do I run?), **Resources** (What do I know?), and **Execution** (How do I transform?).
+
+| Key | Type | Requirement | Description |
+| --- | --- | --- | --- |
+| `contract_info` | `Object` | **Required** | Metadata identifying the mapping version and status. |
+| `ingress` | `Object` | **Required** | Logic used to route incoming payloads to this contract. |
+| `destination` | `Object` | **Required** | The HTTP endpoint and method where the Adapter will forward the payload. |
+| `dry_run` | `Object` | Optional | Configuration for injecting the dry-run flag into payloads. |
+| `dictionaries` | `Object` | Optional | Declarations of external DB lookups or internal static maps. |
+| `processing_pipelines` | `Object` | Optional | Named sequences of atomic data operations. |
+| `output_template` | `Array` | **Required** | The blueprint for one or more output commands. |
+
+---
+
+## 2. Resource & Error Definitions
+
+### `dictionaries` Options
+
+Dictionaries are used to translate source values to internal IDs.
+
+* **`external`**: Hits the `adapter_crosswalks` table. Requires a `namespace`.
+* **`inline`**: A simple key-value pair stored directly in the JSON.
+
+#### `on_unmapped` (Enum)
+
+This defines the behavior when a value (e.g., a Team ID) is not found in the dictionary.
+
+1. **`DLQ` (Dead Letter Queue):** Stop processing, log the error, and move the entire payload to a manual review table.
+2. **`PASS_THROUGH`:** Use the original raw value from the source. (Risky, but useful for your "Campaign Team" fallback).
+3. **`USE_DEFAULT`:** Use a predefined `default` value provided in the config.
+4. **`REJECT`:** Throw a hard 400 error back to the source system immediately.
+
+---
+
+## 3. The Processing Engine (`processing_pipelines`)
+
+A pipeline is an **ordered array** of operations. Each operation (`op`) takes an input and passes its output to the next step.
+
+### Supported Operations (`op`)
+
+| Op Type | Parameters | Example/Behavior |
+| --- | --- | --- |
+| **`cast`** | `type`: `INT, FLOAT, STR, BOOL` | Converts data types. |
+| **`multiply`** | `factor_from` OR `value` | Multiplies by a fixed number or a value from a dictionary's metadata. |
+| **`add`** | `value_from` OR `value` | Mathematical addition (useful for offsets). |
+| **`parse_date`** | `from`: e.g., `DD-MM-YYYY` | Converts a string into a standard Date Object. |
+| **`format_date`** | `to`: e.g., `YYYY-MM-DD` | Outputs a Date Object into a specific string format. |
+| **`regex`** | `pattern`, `replacement` | Advanced string manipulation. |
+| **`case`** | `to`: `UPPER` or `LOWER` | Normalizes string casing. |
+
+---
+
+## 4. Execution Blueprint (`output_template`)
+
+This is where you define the shape of the JSON you are sending to the Ledger.
+
+### Field Mapping Logic
+
+Every field within the template can be defined in one of three ways:
+
+1. **Direct Path:** `{"path": "$.source.field"}`
+2. **Dictionary Lookup:** `{"path": "$.source.field", "dictionary": "external:name"}`
+3. **Pipeline Processing:** `{"path": "$.source.field", "pipeline": "name"}`
+
+### The Iterator (The Loop)
+
+* **`path`**: The JsonPath to the array (e.g., `$.items[*]`).
+* **`fields`**: A sub-template applied to every object in that array.
+
+---
+
+## 5. Formal Schema Example (The "Code-Ready" Version)
+
 ```json
 {
-  "contract_id": "odk_monthly_stock_report",
-  "version": "v1.2",
-  "source_system": "commcare_mobile",
-  "status": "ACTIVE",
+  "contract_info": { "id": "string", "version": "string", "status": "ACTIVE|DRAFT", "source_system": "string" },
+  
+  "ingress": { 
+    "description": "Logic used to route incoming payloads to this contract",
+    "trigger_path": "JsonPath", 
+    "trigger_value": "any" 
+  },
 
   "destination": {
     "url": "https://api.internal/ledger/v1/commands",
     "method": "POST"
   },
 
-  "trigger_conditions": {
-    "description": "How the Adapter knows to use THIS contract",
-    "match_path": "$.form_metadata.xmlns",
-    "match_value": "http://openrosa.org/form/stock_report_v2"
-  },
-
-  "metadata": {
-    "source_event_id": { "path": "$.meta.instanceID" },
-    "version_timestamp": { "path": "$.meta.submissionDate", "format": "ISO8601" }
-  },
-
-  "crosswalks": {
-    "inline_dictionaries": {
-      "uom_codes": {
-        "description": "Small, rarely changing lists stay in JSON",
-        "pre_processing": ["UPPERCASE"],
-        "map": { "BXS": "BOX", "TABS": "TABLET" },
-        "on_unmapped": "USE_DEFAULT",
-        "default": "TABLET"
-      }
-    },
-    "external_dictionaries": {
-      "node_lookup": {
-        "description": "Pointers to the DB for large, frequently changing lists",
-        "db_table": "adapter_crosswalks",
-        "namespace": "dhis2_org_units",
-        "on_unmapped": "DEAD_LETTER_QUEUE"
-      },
-      "commodity_lookup": {
-        "db_table": "adapter_crosswalks",
-        "namespace": "national_drug_codes",
-        "on_unmapped": "DEAD_LETTER_QUEUE"
-      }
-    }
-  },
-
-  "transformations": {
-    "date_formats": {
-      "description": "Normalizes messy field dates to standard formats",
-      "field_date": {
-        "path": "$.report_date",
-        "source_format": "DD-MM-YYYY",
-        "target_format": "YYYY-MM-DD"
-      }
-    }
-  },
-  
   "dry_run": {
     "supported": true,
     "inject_path": "$.metadata.is_dry_run"
   },
 
-  "output_payloads": [
+  "dictionaries": {
+    "external": {
+      "description": "Pointers to the DB for large, frequently changing lists",
+      "name": { "namespace": "string", "on_unmapped": "DLQ|PASS_THROUGH|REJECT" }
+    },
+    "inline": {
+      "description": "Simple key-value pairs stored directly in the JSON",
+      "name": { "map": { "key": "value" }, "default": "any", "on_unmapped": "USE_DEFAULT|DLQ" }
+    }
+  },
+
+  "processing_pipelines": {
+    "pipeline_name": [
+      { "op": "cast", "type": "INTEGER" },
+      { "op": "multiply", "factor_from": "dictionary.dict_name.metadata.key" }
+    ]
+  },
+
+  "output_template": [
     {
-      "description": "Generates a formatted object for every item in the array",
-      "condition": {
-        "path": "$.report_type",
-        "equals": "inventory_count"
-      },
-      "static_fields": {
-         "command_type": "STOCK_COUNT",
-         "program": "MALARIA_NMCP"
-      },
-      "mapped_fields": {
-        "target_node": { "path": "$.facility_code", "crosswalk": "external:node_lookup" },
-        "transaction_date": { "transform": "date_formats.field_date" }
-      },
-      "loop_over": "$.drugs_list[*]",
-      "loop_payload": {
-        "item_id": { "path": "$.drug_code", "crosswalk": "external:commodity_lookup" },
-        "quantity": { "path": "$.counted_qty", "cast_to": "INTEGER" },
-        "uom": { "path": "$.unit", "crosswalk": "inline:uom_codes" }
+      "condition": { "path": "JsonPath", "equals": "any" },
+      "envelope": { "field_name": { "path": "JsonPath" } },
+      "static_injection": { "field_name": "constant_value" },
+      "global_fields": { "field_name": { "path": "JsonPath", "dictionary": "..." } },
+      "iterator": {
+        "path": "JsonPath",
+        "fields": { "field_name": { "path": "JsonPath", "pipeline": "..." } }
       }
     }
   ]
 }
+
 ```
+**[Example](../source-events-samples/about_samples.md)**
 
 ### Why this design is "Battle-Tested" and Professional
 
