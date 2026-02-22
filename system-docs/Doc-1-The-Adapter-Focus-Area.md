@@ -145,9 +145,9 @@ Every field within the template can be defined in one of three ways:
 }
 
 ```
-**[Example](../source-events-samples/about_samples.md)**
+**[Check out a sample source events and their mapping Examples](/system-docs/adapter-source-events-examples/about_samples.md)**
 
-### Why this design is "Battle-Tested" and Professional
+### Why this design 
 
 #### 1. The Pre-Processing Pipeline (`pre_processing`)
 
