@@ -66,6 +66,19 @@ A background worker (Cron) runs every night and performs the following:
 * **Area C** processes this event to update the Clinic's stock.
 * **Area D** marks the registry record as `STALE_AUTO_CLOSED`.
 
+#### The Internal Error Boundary (Orchestrator Exceptions)
+
+What happens if the Orchestrator tries to auto-receive, but **Area C** rejects the `CREDIT` because the destination Clinic has been disabled in the Shared Kernel? We must not let the Cron job crash silently.
+
+**The Solution: The Internal DLQ**
+1. Area C throws a validation exception to Area D during the auto-receive attempt.
+2. Area D catches the exception and updates the `ledger_in_transit_registry` status to `FAILED_AUTO_CLOSE`.
+3. Area D writes an entry to a **`ledger_internal_dlq`** table containing:
+   * `source_process`: `AREA_D_AUTO_RECEIPT`
+   * `reference_id`: The `transfer_id`
+   * `error_message`: "Node deactivated in Shared Kernel"
+4. A system alert is generated for an administrator to manually investigate why the topology has broken the active physical pipeline.
+
 
 
 ---

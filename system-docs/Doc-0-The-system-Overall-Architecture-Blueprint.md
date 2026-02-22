@@ -34,15 +34,9 @@ Professional supply chain systems rely on specific, proven patterns to maintain 
 * **Data-Configurable:** Replay policy (e.g., maximum allowable back-date window).
 * **Boundaries:** *In-Scope:* State transitions and collision handling. *Out-of-Scope:* Calculating stock totals or enforcing UOMs.
 
-This is the most critical logic to get right. In an append-only ledger, you cannot use SQL `UPDATE` or `DELETE`.
+* **Boundaries:** *In-Scope:* State transitions and collision handling. *Out-of-Scope:* Calculating stock totals or enforcing UOMs.
 
-**The Execution Flow for an Edited Form:**
-
-1. **Detection:** The Ledger receives Command V2 with `source_event_id: "ABC"` and `version/version_timestamp: 2`.
-2. **Lookup:** It queries the `inventory_events` table and finds `event_id: 101` matches `source_event_id: "ABC"`.
-3. **Reversal (The Undo):** The Ledger automatically generates a new event: `type: "REVERSAL", qty: +50, linked_to: 101`. This zeroes out the original mistake while keeping the audit trail intact.
-4. **Correction (The Redo):** The Ledger generates another new event: `type: "ISSUE", qty: -40, source_event_id: "ABC", version: 2`.
-5. **Projection Update:** The `current_stock_balances` table is recalculated based on these new events.
+*(For detailed execution flow on Reversals and Edits, see **Doc-3: Area B & E**)*
 
 
 ##### The Shared Kernel (The Common Language, The Ledger)
@@ -64,13 +58,7 @@ This is the most critical logic to get right. In an append-only ledger, you cann
 * **Data-Configurable:** Negative stock allowance; batch requirement rules; expiry thresholds.
 * **Boundaries:** *In-Scope:* Symmetrical accounting and math. *Out-of-Scope:* Interpreting external IDs or handling "In-Transit" delays.
 
-**The Execution Flow for a Stock-Count:**
-
-1. **The Claim:** The nurse submits a physical count: *"I have 100 units on the shelf."*
-2. **The System Check:** The Ledger checks the `current_stock_balances` table. It thinks the facility should have **120** units based on historical receipts and issues.
-3. **The Variance Calculation:** . In this case, .
-4. **The Event:** The Ledger inserts an event: `type: "ADJUSTMENT_VARIANCE", qty: -20, reason: "STOCK_COUNT_RESET"`.
-5. **The Result:** The running total is now perfectly synced to 100, and you have a permanent record that 20 units were lost or consumed unrecorded.
+*(For detailed execution flow on the Absolute Reset math for Stock Counts and Concurrency, see **Doc-4: Area C**)*
 
 ---
 
@@ -83,13 +71,7 @@ Handling the "Push" logistics requires parking the stock in a virtual space so i
 * **Data-Configurable:** Auto-receive time limits (days); auto-confirm default behaviors.
 * **Boundaries:** *In-Scope:* State machines for moving stock. *Out-of-Scope:* Actually adding/subtracting the final balances (Area C does this).
 
-**The Execution Flow for a Two-Step Transfer:**
-
-1. **Dispatch:** MU submits a dispatch form. Ledger creates event: `type: "DEBIT", node: "MU-1", qty: 50`.
-2. **Transit Record Creation:** The Orchestrator creates a row in the `in_transit_records` table: `status: "OPEN", from: "MU-1", to: "HF-2", qty: 50, created_at: "2026-02-21"`.
-3. **Auto-Receive Cron Job:** A nightly job checks the `in_transit_records` table against the Configuration Hierarchy.
-4. **The Policy Check:** It asks the config engine: *"What is the `auto_receive_days` policy for Node HF-2?"* The engine returns `14 days`.
-5. **Closure:** If `created_at` is older than 14 days, the Orchestrator generates a Ledger event: `type: "CREDIT", node: "HF-2", qty: 50, reason: "AUTO_RECEIVE"`. It then updates the transit record to `status: "SYSTEM_CLEARED"`.
+*(For detailed execution flow on Orchestration and Auto-Receipt Cron Jobs, see **Doc-5: Area D**)*
 
 ---
 
@@ -186,14 +168,29 @@ With Area E included, the journey of a Command changes from a direct line to a g
 
 ---
 
-### 4. Revised Prioritized Starting Point
+### 4. Canonical Transaction Types
 
-The introduction of Approval changes the priority. We cannot build the "Accounting Math" (Area C) without knowing if the data coming into it is "Committed" or just "Staged."
+To maintain industry compatibility (GS1/OpenLMIS standards), the Ledger will only recognize these fixed transaction types.
 
-**The New Order:**
+| Transaction Type | Concept | Stock Effect (Base Units) |
+| --- | --- | --- |
+| **RECEIPT** | Stock arriving from an external source or higher level. | `(+) Destination` |
+| **ISSUE** | Stock leaving to a patient or lower-level facility (Consumption). | `(-) Source` |
+| **TRANSFER** | Stock moving between nodes within the system. | `(-) Source`  `(+) In-Transit`  `(+) Destination` |
+| **ADJUSTMENT** | Manual correction for damage, expiry, or found stock. | `(+/-) Node` |
+| **STOCK_COUNT** | The "Physical Audit" snapshot. | `(Override) Balance` (Calculates variance) |
+| **REVERSAL** | The "Undo" part of a compensating transaction. | `(Opposite) of original event` |
 
-1. **Identity Guard (Area B):** Still #1. We must protect against duplicates first.
-2. **Staging & Approval (Area E):** Build the "Waiting Room" for commands. This allows you to test the flow without actually affecting stock math yet.
-3. **The Event Store & Projection (Area C):** Build the final "Truth" store where approved commands are converted into immutable facts.
-4. **Logistics Workflow (Area D):** Layer on the "In-Transit" logic.
+---
+
+### 5. Revised Prioritized Starting Point
+
+We cannot build the "Accounting Math" (Area C) without knowing if the data coming into it is "Committed" or just "Staged," nor can we test without duplicating records. 
+
+**Recommended Implementation Order:**
+
+1. **Identity Guard (Area B):** Build the table that tracks `source_event_id`. This protects against duplicates from the first test.
+2. **Staging & Approval (Area E):** Build the "Waiting Room" for commands to test flow without affecting stock.
+3. **The Event Store & Projection (Area C):** Implement the append-only table, `CREDIT/DEBIT` logic, and "Current Balance" view.
+4. **Logistics Workflow (Area D):** Layer on the "In-Transit" logic once the basic plus/minus math is stable.
 

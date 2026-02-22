@@ -1,6 +1,66 @@
 ### The Strategy: The Asynchronous "Store, Cleanse & Forward" Pipeline
 
-The Adapter is a completely standalone, domain-agnostic mapping and routing engine. It has its own isolated database, its own schemas, and zero knowledge of the destination system (like the Ledger). Its only job is to receive a JSON payload, validate it against configured rules, store it, transform it, and blindly forward it to a configured endpoint.
+We are building a truly decoupled system, **the Adapter and the Ledger share zero database tables.** They do not share a "Master Data" database, or shared module db the ledger uses. They are completely blind to each other’s internal states.
+
+The Adapter is a black box that takes a payload in, applies its own isolated rules, fires a generic HTTP request into the void, and logs whatever comes back.
+
+### The Two Separate Universes
+
+#### Universe A: The Adapter (The Self-Sufficient Engine)
+
+The Adapter has its own configuration database. It does not query the Ledger. When you configure the Adapter, you populate its `adapter_crosswalks` table.
+
+If the user wants to map a 50-pack of Paracetamol, they log into the **Adapter's UI** and configure:
+
+* **Source System Code:** `PARAM-BOX-50`
+* **Destination System Code:** `PARAM-01`
+* **Transform Factor:** `50`
+
+The Adapter stores this in *its own* database tables. When a message arrives, it does the math, builds the JSON command (`{ "item_id": "PARAM-01", "quantity": 100 }`), and POSTs it to the Ledger's URL.
+
+#### Universe B: The Ledger (The Strict Receiver)
+
+The Ledger has its own isolated `commodity_registry`. It only contains the pure definition of an item.
+
+* `PARAM-01` | Paracetamol 500mg | TABLET | ACTIVE
+
+The Ledger knows absolutely nothing about `PARAM-BOX-50`.
+
+---
+
+### The Error Correction Loop (The User's Job, High level pesudo)
+
+Because they are perfectly decoupled, the adapter relies on **Contracts and Dead Letter Queues (DLQs)**. Here is the exact flow you described:
+
+1. **The Mistake:** A new clinic uses a new app version and sends a code the Adapter has never seen: `PARAM-BOX-200`.
+2. **Adapter Tries its Best:** The Adapter checks its internal crosswalk. It doesn't find `PARAM-BOX-200`.
+3. **Adapter Fallback:** Based on your config (`"on_unmapped": "PASS_THROUGH"`), the Adapter shrugs, skips the math pipeline, and sends `{ "item_id": "PARAM-BOX-200", "quantity": 1 }` to the Ledger.
+4. **Ledger Rejects:** The Ledger looks up `PARAM-BOX-200` in its own `commodity_registry`. It doesn't exist. The Ledger immediately responds to the HTTP request with:
+`400 Bad Request: "Unknown item_id: PARAM-BOX-200"`.
+5. **Adapter Logs It:** The Adapter catches the `400 Bad Request`. It writes the original payload and the Ledger's error message into the Adapter's Error Log / Dead Letter Queue.
+6. **The User Fixes It:** * The system administrator checks the Adapter's Error Log.
+* They see the Ledger rejected `PARAM-BOX-200`.
+* They open the Adapter's mapping config.
+* They add a new crosswalk rule: `PARAM-BOX-200`  `PARAM-01` (Transform Factor: 200).
+* They click **"Replay Failed Message"** in the Adapter.
+
+
+7. **Success:** The Adapter processes it again. This time it does the math, sends `{ "item_id": "PARAM-01", "quantity": 200 }`, and the Ledger responds `201 Created`.
+
+---
+
+### Why this is the Ultimate Architecture
+
+By enforcing this strict "fire and log" boundary:
+
+* We can swap out the Ledger entirely in 5 years, and the Adapter won't need a single line of code changed. You just point the URL somewhere else.
+* We can have 10 different Adapters (one for ODK, one for DHIS2, one for a custom Web App), and the Ledger doesn't care. It just sits there evaluating perfectly mapped JSON commands.
+
+We have successfully walled off the Adapter. It is now a perfect, self-sufficient transformation engine.
+
+---
+
+### The Engine: Asynchronous "Store, Cleanse & Forward"
 
 Instead of writing hard-coded `if/else` statements in your Adapter code, we give the Adapter a **Transformation DSL (Domain Specific Language)** in JSON.
 
@@ -147,7 +207,7 @@ Every field within the template can be defined in one of three ways:
 ```
 **[Check out a sample source events and their mapping Examples](/system-docs/adapter-source-events-examples/about_samples.md)**
 
-### Why this design 
+### Why this DSL Design is Battle-Tested
 
 #### 1. The Pre-Processing Pipeline (`pre_processing`)
 
@@ -186,11 +246,6 @@ The Adapter doesn't intrinsically know what a `STOCK_COUNT` is. It only knows th
 #### 6. Date Normalization (`transformations`)
 
 Field apps are notorious for sending dates as `22-02-2026` or `02/22/26`. The Destination must **strictly** accept only one format (e.g., ISO-8601 `YYYY-MM-DD`). The Adapter takes on the burden of translating human-readable dates into database-friendly dates.
-
-### The Boundary Check
-
-Does this violate our rules? **No.**
-The Adapter is entirely stateless regarding the actual business domain (e.g. *inventory*). It is simply acting as a highly configurable router, buffer, and translator. It reads the JSON, reads the Crosswalk DB, formats the data based on user configuration, and throws it over the fence to the URL provided.
 
 ---
 
@@ -235,15 +290,7 @@ This table acts as the "External Dictionary" mentioned in your JSON contract. It
 
 ### 3. The Dead Letter Queue (DLQ) Strategy
 
-In professional systems, we assume **something will break.** The DLQ is where "Invalid" or "Unmapped" payloads go to wait for human intervention without blocking the rest of the queue.
-
-**The Workflow:**
-
-1. **The Failure:** The Adapter worker tries to map `facility_code: "999"` but finds no entry in `adapter_crosswalks`.
-2. **The Park:** The worker updates the `adapter_inbox` status to `DLQ` and copies the context into the `dead_letter_queue` table.
-3. **The Alert:** An admin is notified: *"New unmapped facility code '999' found."*
-4. **The Resolution:** The admin adds the mapping to the `adapter_crosswalks` table and clicks **"Reprocess"** on the DLQ entry.
-5. **The Success:** The Adapter pulls it from the DLQ, maps it successfully, and forwards it to the destination.
+In professional systems, we assume **something will break.** The DLQ is where "Invalid" or "Unmapped" payloads go to wait for human intervention without blocking the rest of the queue (as outlined in the **Error Correction Loop** earlier).
 
 **Table Name:** `dead_letter_queue`
 
@@ -278,9 +325,9 @@ Every time the Adapter attempts to map and forward a payload, it leaves a "bread
 
 ---
 
-### 5. The Dead Letter Management Flow (Replay & Generic Dry-Runs)
+### 5. Advanced Dead Letter Management (Replay State Machine)
 
-When an admin "fixes" a mapping in the DLQ, they need a safe way to test it. This relies on the Adapter injecting the `dry_run` flag defined in the configuration. The Adapter doesn't care what the Destination does with the flag—it just injects it to the specified JSON path and fires it off.
+As outlined in the "Error Correction Loop" above, when an admin "fixes" a mapping in the DLQ, they need a safe way to test it. This relies on the Adapter injecting the `dry_run` flag defined in the configuration. The Adapter doesn't care what the Destination does with the flag—it just injects it to the specified JSON path and fires it off.
 
 **The Replay State Machine:**
 

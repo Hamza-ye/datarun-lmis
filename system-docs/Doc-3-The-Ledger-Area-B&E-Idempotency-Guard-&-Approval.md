@@ -68,6 +68,20 @@ If Area B says "This is new," the Ledger then evaluates the **Approval Policy**.
 
 4. **Finalize (Post-Approval):** * When the supervisor clicks "Approve," the Ledger pulls the `payload` from `ledger_staged_commands` and pushes it to the **Event Store (Area C)**.
 
+---
+
+### The "Reversal" Invariant (Handling Edited Forms)
+
+A critical edge case involves edits to forms that generated commands which were *already* processed or approved.
+**Best Practice Principle:** *Symmetry of Governance.* If the original action required approval, reversing that action implies an equally significant impact on stock and therefore **must also require approval**.
+
+1. **Detection:** Area B detects an incoming `source_event_id` with a newer `version_timestamp`.
+2. **Generation:** Area B generates a `REVERSAL` command for the old state, and a new command for the new state.
+3. **The Gatekeeper Check:**
+   * If the *original* command bypassed Area E, the `REVERSAL` bypasses Area E.
+   * If the *original* command required Area E approval (and was approved), the `REVERSAL` command is **immediately parked** in `ledger_staged_commands`.
+4. **Resolution:** A supervisor must approve the "Undo" action before Area C actually removes the original units from the balance.
+
 ### Summary of Success Criteria
 
 * **No "Double-Dipping":** Even if the internet is flaky and the phone sends the same data 10 times, the `ledger_idempotency_registry` ensures the "Staging" or "Commit" only happens once.

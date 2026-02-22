@@ -34,8 +34,24 @@ Querying the `inventory_events` table to find the current balance of 500 items a
 | `item_id` | **String (Composite PK)** | The commodity. |
 | `batch_id` | **String (Composite PK)** | (Optional) if tracking by batch. |
 | `quantity_on_hand` | **BigInt** | The running total. |
+| `version` | **Integer** | Used for Optimistic Concurrency Control. Increments on every update. |
 | `last_event_id` | `BigInt` | Pointer to the last event processed (for consistency checks). |
 | `updated_at` | `Timestamp` | Last time the balance changed. |
+
+---
+
+### Preventing Race Conditions (Optimistic Concurrency Control)
+
+In a high-throughput system, it is possible for two commands affecting the *same* `node_id` and `item_id` to be processed by Area C at the exact same millisecond. If we rely on simple `UPDATE stock_balances SET quantity = quantity + 10`, we risk race conditions and dirty reads.
+
+**The Solution:** We implement **Optimistic Concurrency Control (OCC)** using the `version` column.
+
+1. **Read:** The Ledger reads the current projection for Node A / Item X (e.g., `quantity: 100`, `version: 5`).
+2. **Math:** The Ledger processes a `RECEIPT` of 10. The new target quantity is `110`. The target version is `6`.
+3. **Atomic Update:** The database executes: 
+   `UPDATE stock_balances SET quantity_on_hand = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5;`
+4. **The Guard:** If another thread updated the row a millisecond earlier, the `version` would now be `6`. Our `UPDATE` using `WHERE version = 5` will affect **0 rows**.
+5. **The Retry:** The Ledger detects that 0 rows were updated, throwing a `StaleObjectException`. It briefly pauses, re-reads the new state (`version 6`), performs the math again, and successfully commits to `version 7`.
 
 ---
 
