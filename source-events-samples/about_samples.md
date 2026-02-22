@@ -1,104 +1,13 @@
+## about samples and mappings
+supply nodes can be of types MU WH, HF, TEAM (mobile teams during temporary periodic campaigns), MOBILE WH (temporary WHs during campaigns) as a supply node.
 
-```json
-{
-    "createdBy": "777446848",
-    "lastModifiedBy": "777446848",
-    "createdDate": "2026-01-10T16:52:04.591523Z",
-    "lastModifiedDate": "2026-01-10T16:52:04.591523Z",
-    "translations": [],
-    "serialNumber": 84060,
-    "uid": "DzkazRtL9Po",
-    "deleted": false,
-    "formData": {
-        "invoice": {
-            "DateOnly": "2026-01-10",
-            "invoiceDetails": [
-                {
-                    "_id": "01KEMD4Y9TQYPBDKHQTTHTSWQA",
-                    "_index": 1,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "MRDT25",
-                    "wh_quantity": 66,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9TM0JSEH65N432CNKN",
-                    "_index": 2,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "DRDT10",
-                    "wh_quantity": 0,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9TD2V5NG6R8NFTHZKK",
-                    "_index": 3,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "ACT80",
-                    "wh_quantity": 147,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9VCMHAD8N1F35V0Q9C",
-                    "_index": 4,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "ACT60",
-                    "wh_quantity": 61,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9VWDM6ZF79SSHHQ08E",
-                    "_index": 5,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "ACT40",
-                    "wh_quantity": 47,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9V293X0SWKB9M5ZX0E",
-                    "_index": 6,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "ACT20",
-                    "wh_quantity": 55,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9VJ2VKTKSH3RF23TX7",
-                    "_index": 7,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "PMQ15MGTape10Tablets",
-                    "wh_quantity": 14,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9VNMA0T2YKNBP8MCCV",
-                    "_index": 8,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "PMQTape10Tablets",
-                    "wh_quantity": 0,
-                    "_submissionUid": "DzkazRtL9Po"
-                },
-                {
-                    "_id": "01KEMD4Y9VWH911PZX9DWJW8SZ",
-                    "_index": 9,
-                    "_parentId": "DzkazRtL9Po",
-                    "wh_category": "ARTINJ",
-                    "wh_quantity": 0,
-                    "_submissionUid": "DzkazRtL9Po"
-                }
-            ],
-            "wh_vouchernumber": 757
-        }
-    },
-    "form": "z0xxGWenaov",
-    "formVersion": "uikXuNR3mcW",
-    "version": 10,
-    "team": "bzcarZnmzH1",
-    "teamCode": "1704042",
-    "from_org_unit": "by253Ax0YOB",
-    "orgUnit": "sbcyeyxn4Ly",
-    "orgUnitName": "الوحده الصحيه بني زيد",
-    "activity": "JD0PHjVL1r5",
-    "assignment": "CeuvqviBp5Q",
-    "startEntryTime": "2026-01-10T16:39:10.370169Z",
-    "finishedEntryTime": "2026-01-10T16:44:12.043757Z"
-}
+* **[hf_receipt_902](./hf_receipt_902_example.json):**
+from is mapped by crosswalking that mapps `team` which is the team uid to the MU supply node uid, or fall back to incoming `team` it's a campaign team, it might be rejected by ledger if not presents there, adapter have no business in this except it logs what the ledger will say. 
+* **[wh_stocktake_901](./wh_stocktake_901_example%20(for%20MU%20stocktakes).json):**
+the `orgunit` is the stocktake subject.
+* **[wh_stocktake_hf_901](./wh_stocktake_hf_901_example.json):**
+the `orgunit` is the stocktake subject.
+* **[wh_team_receipt_902](./wh_team_receipt_902_example.json):**
+`from` is the `orgUnit`, `to` is crosswalked from `team` which is the team uid, or fall back to same incoming value `team`.
+* **[wh_team_returns_904](./wh_team_returns_904_example.json):**
+`to` is the `orgUnit`, `from` is crosswalked from `team` which is the team uid, or fall back to same incoming value `team`.
