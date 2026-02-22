@@ -1,7 +1,7 @@
 
 # Module 2 — The Ledger Focus Area
 
-The Ledger is divided into three distinct sub-modules (Areas B, C, and D) to ensure vertical testability and separation of concerns.
+The Ledger is divided into four distinct sub-modules (Areas B, E, C, and D) to ensure vertical testability and separation of concerns.
 
 ## 1. Area B: Identity & Lifecycle Manager (The Guard)
 
@@ -17,7 +17,20 @@ The Ledger is divided into three distinct sub-modules (Areas B, C, and D) to ens
 * **Idempotency Registry:** A high-speed lookup table of `source_event_id` and their processing status.
 * **Event Lifecycle Policy:** Data-driven rules on how long after the "Fact" an event can be edited or reversed (The "Closing the Books" window).
 
-## 2. Area C: Atomic Accounting Engine (The Bookkeeper)
+## 2. Area E: Approval & Governance Flow (The Gatekeeper)
+
+**Intent:** To intercept high-impact commands and hold them in a "Staged" state until authorized by a designated role before committing them to the Event Store.
+
+* **Responsibilities:**
+* Rule-based interception of commands (e.g., intercept all `ADJUSTMENT` types).
+* Tracking approval signatures and resolving required roles from the hierarchy.
+* Managing the transition from `STAGED` to `COMMITTED` (to Area C) or `REJECTED`.
+
+* **Required Artifacts:**
+* **Staged Commands Store:** A durable waiting room table for pending approvals.
+* **Approval Audit Table:** The immutable log of who approved/rejected what and when.
+
+## 3. Area C: Atomic Accounting Engine (The Bookkeeper)
 
 **Intent:** The mathematical core. It performs the "Symmetrical Accounting" and maintains the current state of the world (Stock on Hand).
 
@@ -32,7 +45,7 @@ The Ledger is divided into three distinct sub-modules (Areas B, C, and D) to ens
 * **Accounting Schema:** Definitions for how different transaction types impact the ledger.
 
 
-## 3. Area D: Logistics Orchestrator (The Workflow Engine)
+## 4. Area D: Logistics Orchestrator (The Workflow Engine)
 
 **Intent:** To manage the "Space and Time" gap in logistics, specifically stock that has left one location but not yet arrived at another.
 
@@ -49,7 +62,7 @@ The Ledger is divided into three distinct sub-modules (Areas B, C, and D) to ens
 
 ---
 
-## 4. Canonical Transaction Types
+## 5. Canonical Transaction Types
 
 To maintain industry compatibility (GS1/OpenLMIS standards), the Ledger will only recognize these fixed transaction types. The **Adapter** is responsible for mapping "messy" field names into these "Clean" types.
 
@@ -64,24 +77,23 @@ To maintain industry compatibility (GS1/OpenLMIS standards), the Ledger will onl
 
 ---
 
-## 5. Prioritized Starting Point: The Idempotency Guard (Area B)
+## 6. Prioritized Starting Point: The Idempotency Guard (Area B)
 
 **Why:** If we build the math (Area C) first without the guard (Area B), we risk corrupting our database with duplicates from the very first test.
 
 **Recommended Implementation Order:**
 
 1. **Identity Guard (Area B):** Build the table that tracks `source_event_id`. This allows you to safely send payloads multiple times without worry.
-2. **The Event Store (Area C):** Implement the append-only table and the `CREDIT/DEBIT` logic.
-3. **The Projection (Area C):** Create the "Current Balance" view so you can actually see the results of your events.
+2. **Staging & Approval (Area E):** Build the "Waiting Room" for commands. This allows testing of the flow without affecting stock math yet.
+3. **The Event Store & Projection (Area C):** Implement the append-only table, `CREDIT/DEBIT` logic, and "Current Balance" view so you can see the results of approved events.
 4. **Logistics Workflow (Area D):** Layer on the "In-Transit" logic once the basic plus/minus math is stable.
+
 
 ---
 
-## 6. Verification & Acceptance Criteria (Ledger Core)
+## 7. Verification & Acceptance Criteria (Ledger Core)
 
 * [ ] **Duplicate Test:** Submitting a command with the same `source_event_id` twice results in a `200 Already Processed` and no second entry in the Event Store.
 * [ ] **Symmetry Test:** A `TRANSFER` command correctly decreases the source and places the equivalent quantity into the `In-Transit` registry.
 * [ ] **Variance Test:** If the system thinks stock is 50, and a `STOCK_COUNT` of 40 is submitted, an adjustment of `-10` is automatically generated.
 * [ ] **Base Unit Integrity:** All internal storage and math must be in integers (Base Units); no decimals allowed in the Ledger math layer.
-
-**Would you like me to now provide the technical Database Schema for "Area B: The Idempotency Guard" and "Area C: The Event Store"?**

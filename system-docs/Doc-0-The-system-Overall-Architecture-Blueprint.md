@@ -184,19 +184,6 @@ With Area E included, the journey of a Command changes from a direct line to a g
 5. **Commitment (Area C):** The Ledger moves the data from the "Staging" area to the "Event Store," and the stock balance finally updates.
 
 
-### 3. Updated Transaction Lifecycle (The "Staging" Pattern)
-
-With Area E included, the journey of a Command changes from a direct line to a gated workflow.
-
-1. **Ingestion:** Adapter normalizes the data.
-2. **Idempotency (Area B):** Ledger ensures we haven't seen this `source_event_id` before.
-3. **Governance Check (Area E):** * The `ApprovalResolver` checks the hierarchy.
-* **If No Approval Needed:** Command proceeds immediately to Area C.
-* **If Approval Needed:** Command is written to `pending_approvals` with status `AWAITING`. The Ledger sends a `202 Accepted (Pending Approval)` response to the Adapter.
-
-
-4. **Action:** A supervisor logs in, reviews the `AWAITING` queue, and clicks **Approve**.
-5. **Commitment (Area C):** The Ledger moves the data from the "Staging" area to the "Event Store," and the stock balance finally updates.
 
 ---
 
