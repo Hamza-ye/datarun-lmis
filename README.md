@@ -1,5 +1,10 @@
 ## Datarun LMIS
-For details Check:
+STACK:
+* **Backend**: Python Fast API.
+* **Frontend**: Angular.
+
+**System Docs:**
+
 * [DOC 0- The system Overall Architecture Blueprint](../system-docs/Doc-0-The-system-Overall-Architecture-Blueprint.md).
 * [DOC 1- The Adapter Focus Area](../system-docs/Doc-1-The-Adapter-Focus-Area.md).
 * [DOC 2- The Ledger Focus Areas (The Intro)](../system-docs/Doc-2-The-Ledger-Focus-Areas-The-Intro.md).
