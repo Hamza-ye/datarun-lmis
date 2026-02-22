@@ -36,7 +36,7 @@ Professional supply chain systems rely on specific, proven patterns to maintain 
 
 * **Boundaries:** *In-Scope:* State transitions and collision handling. *Out-of-Scope:* Calculating stock totals or enforcing UOMs.
 
-*(For detailed execution flow on Reversals and Edits, see **Doc-3: Area B & E**)*
+*(For detailed execution flow on Reversals and Edits, see [**Doc-3: Area B & E**](Doc-3-The-Ledger-Area-B&E-Idempotency-Guard-&-Approval.md))*
 
 
 ##### The Shared Kernel (The Common Language, The Ledger)
@@ -58,7 +58,7 @@ Professional supply chain systems rely on specific, proven patterns to maintain 
 * **Data-Configurable:** Negative stock allowance; batch requirement rules; expiry thresholds.
 * **Boundaries:** *In-Scope:* Symmetrical accounting and math. *Out-of-Scope:* Interpreting external IDs or handling "In-Transit" delays.
 
-*(For detailed execution flow on the Absolute Reset math for Stock Counts and Concurrency, see **Doc-4: Area C**)*
+*(For detailed execution flow on the Absolute Reset math for Stock Counts and Concurrency, see [**Doc-4: Area C**](Doc-4-The-Ledger-Area-C-Immutable-Event-Store.md))*
 
 ---
 
@@ -71,7 +71,7 @@ Handling the "Push" logistics requires parking the stock in a virtual space so i
 * **Data-Configurable:** Auto-receive time limits (days); auto-confirm default behaviors.
 * **Boundaries:** *In-Scope:* State machines for moving stock. *Out-of-Scope:* Actually adding/subtracting the final balances (Area C does this).
 
-*(For detailed execution flow on Orchestration and Auto-Receipt Cron Jobs, see **Doc-5: Area D**)*
+*(For detailed execution flow on Orchestration and Auto-Receipt Cron Jobs, see [**Doc-5: Area D**](Doc-5-The-Ledger-Area-D-In-Transit-Registry.md))*
 
 ---
 
