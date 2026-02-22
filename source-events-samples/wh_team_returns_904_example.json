@@ -1,0 +1,75 @@
+{
+    "createdBy": "775224105",
+    "lastModifiedBy": "775224105",
+    "createdDate": "2026-01-18T19:54:37.840473Z",
+    "lastModifiedDate": "2026-01-18T19:54:37.840473Z",
+    "serialNumber": 87023,
+    "uid": "BrIdTBFx4nI",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "team": "01KE5Q1Z6VNMTHS7ETBYN92MTC",
+            "DateOnly": "2026-01-14",
+            "invoiceDetails": [
+                {
+                    "_id": "01KF9ARYRCRNYHQVW3ACKZR6ZH",
+                    "_index": 1,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 17,
+                    "_submissionUid": "BrIdTBFx4nI"
+                },
+                {
+                    "_id": "01KF9ARYRC7V9FJ789NFD1XN0R",
+                    "_index": 2,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "ACT80",
+                    "wh_quantity": 47,
+                    "_submissionUid": "BrIdTBFx4nI"
+                },
+                {
+                    "_id": "01KF9ARYRC6HSP4SC88B8K5F60",
+                    "_index": 3,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "ACT60",
+                    "wh_quantity": 20,
+                    "_submissionUid": "BrIdTBFx4nI"
+                },
+                {
+                    "_id": "01KF9ARYRC4AWG34KT177ARP3X",
+                    "_index": 4,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "ACT40",
+                    "wh_quantity": 13,
+                    "_submissionUid": "BrIdTBFx4nI"
+                },
+                {
+                    "_id": "01KF9ARYRCY3G9YXA7T0Z6N5SW",
+                    "_index": 5,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "ACT20",
+                    "wh_quantity": 17,
+                    "_submissionUid": "BrIdTBFx4nI"
+                },
+                {
+                    "_id": "01KF9ARYRC9PCRN661WVK60GX6",
+                    "_index": 6,
+                    "_parentId": "BrIdTBFx4nI",
+                    "wh_category": "PMQ15MGTape10Tablets",
+                    "wh_quantity": 7,
+                    "_submissionUid": "BrIdTBFx4nI"
+                }
+            ],
+            "wh_vouchernumber": 17
+        }
+    },
+    "form": "PBPpagrcHRm",
+    "formVersion": "j81tLx4Shd9",
+    "version": 7,
+    "team": "kqm9tXg1ipd",
+    "orgUnit": "DNE8e6tbYZO",
+    "activity": "JD0PHjVL1r5",
+    "assignment": "U8wpL9rI2wF",
+    "startEntryTime": "2026-01-18T19:43:57.764524Z",
+    "finishedEntryTime": "2026-01-18T19:54:33.072809Z"
+}

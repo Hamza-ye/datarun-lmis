@@ -1,0 +1,39 @@
+{
+    "createdBy": "715454166",
+    "createdDate": "2026-02-03T20:07:32.364570Z",
+    "serialNumber": 89411,
+    "uid": "P8dZmrUgFEk",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "DateOnly": "2026-01-31",
+            "invoiceDetails": [
+                {
+                    "_id": "01KGJHW37PM9V5QK71S7W1Z3D0",
+                    "_index": 1,
+                    "_parentId": "P8dZmrUgFEk",
+                    "wh_quantity": 4,
+                    "_submissionUid": "P8dZmrUgFEk",
+                    "wh_category_hf": "MRDT25"
+                },
+                {
+                    "_id": "01KGJHW37P22GCW70RB7K4KRCP",
+                    "_index": 2,
+                    "_parentId": "P8dZmrUgFEk",
+                    "wh_quantity": 80,
+                    "_submissionUid": "P8dZmrUgFEk",
+                    "wh_category_hf": "DRDT10"
+                }
+            ]
+        }
+    },
+    "form": "eKCIxhng48k",
+    "formVersion": "U9VSOY2tRIZ",
+    "version": 1,
+    "team": "zVFvsb6ZzzP",
+    "orgUnit": "Q2vZGwhoFKW",
+    "activity": "c1bnCUk9Ywi",
+    "assignment": "OXLf8lL2oZA",
+    "startEntryTime": "2026-02-03T20:01:18.296711Z",
+    "finishedEntryTime": "2026-02-03T20:06:22.470497Z"
+}

@@ -1,0 +1,170 @@
+{
+    "createdBy": "770344671",
+    "lastModifiedBy": "770344671",
+    "createdDate": "2026-01-10T15:09:54.669118Z",
+    "lastModifiedDate": "2026-01-10T15:09:54.669118Z",
+    "serialNumber": 84007,
+    "uid": "tIWc8agBMaG",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "team": "01KE5Q1Z6TMKDXV5W84ED64B1B",
+            "DateOnly": "2026-01-09",
+            "invoiceDetails": [
+                {
+                    "_id": "01KEM79W2VJ92F6Q0QZH36JVMX",
+                    "_index": 1,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 704,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VMT69B1Q5MDA94NBA",
+                    "_index": 2,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "DRDT10",
+                    "wh_quantity": 39,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VHYTZ537JEEFS47YX",
+                    "_index": 3,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT80",
+                    "wh_quantity": 2094,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2V5PJMRBZXMRHGRVGB",
+                    "_index": 4,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT60",
+                    "wh_quantity": 863,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VAVZ13JR4YKEWF53Z",
+                    "_index": 5,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT40",
+                    "wh_quantity": 656,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VAEN34Z8272NYC8YB",
+                    "_index": 6,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT20",
+                    "wh_quantity": 831,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VKQPWF9FTSPBFDZCT",
+                    "_index": 7,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 466,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VMH7EJEP5PQPAW13B",
+                    "_index": 8,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "DRDT10",
+                    "wh_quantity": 24,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2V5XT47CTXS1CB8QT3",
+                    "_index": 9,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT80",
+                    "wh_quantity": 1318,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VZ5PPT3EDQH2TPYT4",
+                    "_index": 10,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT60",
+                    "wh_quantity": 548,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VC56R5SX64VQPJ4T1",
+                    "_index": 11,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT40",
+                    "wh_quantity": 406,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VY8WCGFN90HDQ01SQ",
+                    "_index": 12,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT20",
+                    "wh_quantity": 510,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2V7NGV1WEJC7731BQ8",
+                    "_index": 13,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 238,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VV5K844Y6BST5T889",
+                    "_index": 14,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "DRDT10",
+                    "wh_quantity": 15,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2V5S2AKW427NR1WFDJ",
+                    "_index": 15,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT80",
+                    "wh_quantity": 536,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2V0M16ZRHF8WD67HCV",
+                    "_index": 16,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT60",
+                    "wh_quantity": 222,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VM1SJP1PJAWZT9MGT",
+                    "_index": 17,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT40",
+                    "wh_quantity": 167,
+                    "_submissionUid": "tIWc8agBMaG"
+                },
+                {
+                    "_id": "01KEM79W2VYRZF78EBBX4YZMSE",
+                    "_index": 18,
+                    "_parentId": "tIWc8agBMaG",
+                    "wh_category": "ACT20",
+                    "wh_quantity": 197,
+                    "_submissionUid": "tIWc8agBMaG"
+                }
+            ]
+        }
+    },
+    "form": "KyX2QVNHAy5",
+    "formVersion": "mMxmcHS5AGM",
+    "version": 6,
+    "team": "H7UGyScQETJ",
+    "orgUnit": "iFOC7l2giOb",
+    "activity": "JD0PHjVL1r5",
+    "assignment": "o2ImKRdgLU3",
+    "startEntryTime": "2026-01-10T15:01:10.711886Z",
+    "finishedEntryTime": "2026-01-10T15:06:51.577519Z"
+}

@@ -1,0 +1,98 @@
+{
+    "createdBy": "777446848",
+    "lastModifiedBy": "777446848",
+    "createdDate": "2026-01-10T16:52:04.591523Z",
+    "lastModifiedDate": "2026-01-10T16:52:04.591523Z",
+    "serialNumber": 84060,
+    "uid": "DzkazRtL9Po",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "DateOnly": "2026-01-10",
+            "invoiceDetails": [
+                {
+                    "_id": "01KEMD4Y9TQYPBDKHQTTHTSWQA",
+                    "_index": 1,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 66,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9TM0JSEH65N432CNKN",
+                    "_index": 2,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "DRDT10",
+                    "wh_quantity": 0,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9TD2V5NG6R8NFTHZKK",
+                    "_index": 3,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "ACT80",
+                    "wh_quantity": 147,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9VCMHAD8N1F35V0Q9C",
+                    "_index": 4,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "ACT60",
+                    "wh_quantity": 61,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9VWDM6ZF79SSHHQ08E",
+                    "_index": 5,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "ACT40",
+                    "wh_quantity": 47,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9V293X0SWKB9M5ZX0E",
+                    "_index": 6,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "ACT20",
+                    "wh_quantity": 55,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9VJ2VKTKSH3RF23TX7",
+                    "_index": 7,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "PMQ15MGTape10Tablets",
+                    "wh_quantity": 14,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9VNMA0T2YKNBP8MCCV",
+                    "_index": 8,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "PMQTape10Tablets",
+                    "wh_quantity": 0,
+                    "_submissionUid": "DzkazRtL9Po"
+                },
+                {
+                    "_id": "01KEMD4Y9VWH911PZX9DWJW8SZ",
+                    "_index": 9,
+                    "_parentId": "DzkazRtL9Po",
+                    "wh_category": "ARTINJ",
+                    "wh_quantity": 0,
+                    "_submissionUid": "DzkazRtL9Po"
+                }
+            ],
+            "wh_vouchernumber": 757
+        }
+    },
+    "form": "z0xxGWenaov",
+    "formVersion": "uikXuNR3mcW",
+    "version": 10,
+    "team": "bzcarZnmzH1",
+    "orgUnit": "sbcyeyxn4Ly",
+    "activity": "JD0PHjVL1r5",
+    "assignment": "CeuvqviBp5Q",
+    "startEntryTime": "2026-01-10T16:39:10.370169Z",
+    "finishedEntryTime": "2026-01-10T16:44:12.043757Z"
+}
