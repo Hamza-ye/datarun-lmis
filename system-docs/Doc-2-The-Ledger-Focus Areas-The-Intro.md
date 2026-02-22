@@ -64,7 +64,7 @@ The Ledger is divided into four distinct sub-modules (Areas B, E, C, and D) to e
 
 ## 5. Canonical Transaction Types
 
-To maintain industry compatibility (GS1/OpenLMIS standards), the Ledger will only recognize these fixed transaction types. The **Adapter** is responsible for mapping "messy" field names into these "Clean" types.
+To maintain industry compatibility (GS1/OpenLMIS standards), the Ledger will only recognize these fixed transaction types. The **submitting Client/Actor** is responsible for mapping "messy" field names into these "Clean" types.
 
 | Transaction Type | Concept | Stock Effect (Base Units) |
 | --- | --- | --- |

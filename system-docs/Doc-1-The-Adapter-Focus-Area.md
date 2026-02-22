@@ -1,20 +1,21 @@
-### The Strategy: The "Cleanse & Emit" Pipeline
-No longer querying or knowing the shared module and its tables, it has it's own added by users dectionaries of cross-walk and mappings roles to do it's job in providing in outputing a command in the way a destination wants.
+### The Strategy: The Asynchronous "Store, Cleanse & Forward" Pipeline
+
+The Adapter is a completely standalone, domain-agnostic mapping and routing engine. It has its own isolated database, its own schemas, and zero knowledge of the destination system (like the Ledger). Its only job is to receive a JSON payload, validate it against configured rules, store it, transform it, and blindly forward it to a configured endpoint.
 
 Instead of writing hard-coded `if/else` statements in your Adapter code, we give the Adapter a **Transformation DSL (Domain Specific Language)** in JSON.
 
-The pipeline does three things:
+The pipeline does four asynchronous things:
 
-1. **Extract:** Pull the raw data using JSONPath.
-2. **Cleanse (Crosswalks):** Run the messy data through defined normalization rules and dictionaries.
-3. **Emit:** Construct the strict Ledger Command.
+1. **Receive & Store (The Inbox):** Receive the raw data, validate its basic structure, save it to the `adapter_inbox`, and immediately return a `202 Accepted` to the source.
+2. **Extract:** A background worker pulls the raw data from the Inbox using JSONPath.
+3. **Cleanse (Crosswalks):** Run the messy data through defined normalization rules and dictionaries.
+4. **Emit & Forward:** Construct the final Payload based on the configuration and POST it to the destination URL.
 
 ---
 
 ### The JSON Mapping Schema (The "A-to-B" Contract)
 
-Here is how you model the Adapter's configuration to handle your `ACT-80` and implied UOM edge cases seamlessly.
-This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
+Here is how you model the Adapter's configuration to handle variations like `ACT-80` and format the data exactly how the destination wants it. This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
 
 ```json
 {
@@ -22,6 +23,11 @@ This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
   "version": "v1.2",
   "source_system": "commcare_mobile",
   "status": "ACTIVE",
+
+  "destination": {
+    "url": "https://api.internal/ledger/v1/commands",
+    "method": "POST"
+  },
 
   "trigger_conditions": {
     "description": "How the Adapter knows to use THIS contract",
@@ -61,7 +67,7 @@ This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
 
   "transformations": {
     "date_formats": {
-      "description": "Normalizes messy field dates to the Ledger's standard",
+      "description": "Normalizes messy field dates to standard formats",
       "field_date": {
         "path": "$.report_date",
         "source_format": "DD-MM-YYYY",
@@ -69,31 +75,36 @@ This schema separates the **Rules** (JSON) from the **Data** (Crosswalk DB).
       }
     }
   },
+  
+  "dry_run": {
+    "supported": true,
+    "inject_path": "$.metadata.is_dry_run"
+  },
 
-  "output_commands": [
+  "output_payloads": [
     {
-      "description": "Generates a STOCK_COUNT command for every item in the array",
+      "description": "Generates a formatted object for every item in the array",
       "condition": {
         "path": "$.report_type",
         "equals": "inventory_count"
       },
-      "command_type": { "static": "STOCK_COUNT" },
-      "target_node": { 
-        "path": "$.facility_code", 
-        "crosswalk": "external:node_lookup" 
+      "static_fields": {
+         "command_type": "STOCK_COUNT",
+         "program": "MALARIA_NMCP"
       },
-      "transaction_date": { "transform": "date_formats.field_date" },
+      "mapped_fields": {
+        "target_node": { "path": "$.facility_code", "crosswalk": "external:node_lookup" },
+        "transaction_date": { "transform": "date_formats.field_date" }
+      },
       "loop_over": "$.drugs_list[*]",
-      "payload": {
+      "loop_payload": {
         "item_id": { "path": "$.drug_code", "crosswalk": "external:commodity_lookup" },
         "quantity": { "path": "$.counted_qty", "cast_to": "INTEGER" },
-        "uom": { "path": "$.unit", "crosswalk": "inline:uom_codes" },
-        "program": { "static": "MALARIA_NMCP" } 
+        "uom": { "path": "$.unit", "crosswalk": "inline:uom_codes" }
       }
     }
   ]
 }
-
 ```
 
 ### Why this design is "Battle-Tested" and Professional
@@ -111,8 +122,8 @@ You mentioned getting `ACT-80`, `act80`, and `act_80`. Instead of mapping every 
 
 What happens when the field sends `NEW_DRUG_X` and it's not in the crosswalk?
 
-* You don't want the Ledger crashing.
-* The `on_unmapped: "REJECT_PAYLOAD"` tells the Adapter to halt and throw an error back to the source, OR you can configure it to `SEND TO DEAD LETTER`, which puts the payload in a holding queue for an admin to map later.
+* You don't want the Destination crashing.
+* The `on_unmapped: "REJECT_PAYLOAD"` tells the Adapter to halt and throw an error back to the source, OR you can configure it to `SEND TO DEAD LETTER`, which puts the payload in a holding queue for an admin to map later without dropping the data.
 
 #### 3. External Dictionaries (`external_dictionaries`)
 
@@ -126,28 +137,46 @@ Notice the `node_lookup`. Instead of a map, it provides a `namespace: "dhis2_org
 
 Sometimes one source form handles both Receipts and Issues.
 
-* By adding a `condition` block to the `output_commands`, the Adapter can evaluate the payload. If `report_type == 'inventory_count'`, it emits a `STOCK_COUNT` command. You could add a second block in that array where if `report_type == 'receipt'`, it emits a `RECEIPT` command.
+* By adding a `condition` block to the `output_payloads`, the Adapter can evaluate the payload. If `report_type == 'inventory_count'`, it formats it one way. You could add a second block in that array where if `report_type == 'receipt'`, it formats it completely differently.
 
-#### 5. Static Injection (`"static": "MALARIA_NMCP"`)
+#### 5. Static Injection (`static_fields`)
 
-Field apps often omit data that the central ledger desperately needs. For example, the ledger might track inventory by "Funding Program" (Malaria vs. HIV), but the Malaria field app doesn't bother sending that because it assumes you know.
-
-* The `"static"` rule allows the Adapter to inject constant values into the command so the Ledger's strict schema is satisfied.
+The Adapter doesn't intrinsically know what a `STOCK_COUNT` is. It only knows that the user configured it to inject the static key-value pair `"command_type": "STOCK_COUNT"` into the output JSON. This allows the Adapter to fulfill the strict schema requirements of whatever downstream system it is talking to, without carrying domain logic itself.
 
 #### 6. Date Normalization (`transformations`)
 
-Field apps are notorious for sending dates as `22-02-2026` or `02/22/26`. The Ledger must **strictly** accept only one format (e.g., ISO-8601 `YYYY-MM-DD`). The Adapter takes on the burden of translating human-readable dates into database-friendly dates.
+Field apps are notorious for sending dates as `22-02-2026` or `02/22/26`. The Destination must **strictly** accept only one format (e.g., ISO-8601 `YYYY-MM-DD`). The Adapter takes on the burden of translating human-readable dates into database-friendly dates.
 
 ### The Boundary Check
 
 Does this violate our rules? **No.**
-The Adapter is still stateless regarding *inventory*. It is simply acting as a highly configurable router and translator. It reads the JSON, reads the Crosswalk DB, formats the data, and throws it over the fence to the Ledger.
+The Adapter is entirely stateless regarding the actual business domain (e.g. *inventory*). It is simply acting as a highly configurable router, buffer, and translator. It reads the JSON, reads the Crosswalk DB, formats the data based on user configuration, and throws it over the fence to the URL provided.
 
 ---
 
-## database schema for the adapter_crosswalks table and the Dead Letter Queue (DLQ) table
+## Database schema for the Adapter (The Isolated Sub-System)
 
-### 1. The Crosswalk Registry (Relational Table)
+The Adapter owns its own independent database schema.
+
+### 1. The Store-and-Forward Inbox
+
+To prevent data loss when downstream systems are down, or when mapping rules are complex, the Adapter acts as an asynchronous buffer. When a source system pushes data, it immediately lands here.
+
+**Table Name:** `adapter_inbox`
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | UUID | Primary Key (Internal Inbox ID). |
+| `source_system` | String | e.g., `commcare_mobile`. |
+| `raw_payload` | JSONB | The exact bits submitted by the external app. |
+| `received_at` | Timestamp | When the payload hit the API. |
+| `status` | Enum | `RECEIVED`, `MAPPED`, `FORWARDED`, `DLQ`. |
+
+**The Workflow:** The Source POSTs to the Adapter. The Adapter saves to `adapter_inbox`. The Adapter immediately returns `HTTP 202 Accepted` to the Source. The Source disconnects. A background worker then picks up the `RECEIVED` row and starts the mapping process.
+
+---
+
+### 2. The Crosswalk Registry (Relational Table)
 
 This table acts as the "External Dictionary" mentioned in your JSON contract. It’s designed to be indexed for high-speed lookups during the mapping phase.
 
@@ -158,90 +187,72 @@ This table acts as the "External Dictionary" mentioned in your JSON contract. It
 | `id` | UUID | Primary Key. |
 | `namespace` | String | Groups mappings (e.g., `dhis2_nodes`, `odk_commodities`). |
 | `source_value` | String | The "messy" value from the external app (e.g., `act_80`). |
-| `internal_id` | String | The clean ID for your Ledger (e.g., `PROD-AL-01`). |
+| `internal_id` | String | The clean ID required by the Destination (e.g., `PROD-AL-01`). |
 | `is_active` | Boolean | Allows deactivating a mapping without deleting history. |
-| `metadata` | JSONB | **Creative addition:** Store UOM defaults or pack sizes specific to this source. |
+| `metadata` | JSONB | **Creative addition:** Store contextual defaults or multipliers specific to this source. |
 
 ---
 
-### 2. The Dead Letter Queue (DLQ) Strategy
+### 3. The Dead Letter Queue (DLQ) Strategy
 
-In professional systems, we assume **something will break.** The DLQ is where "Invalid" or "Unmapped" payloads go to wait for human intervention.
+In professional systems, we assume **something will break.** The DLQ is where "Invalid" or "Unmapped" payloads go to wait for human intervention without blocking the rest of the queue.
 
 **The Workflow:**
 
-1. **The Failure:** The Adapter tries to map `facility_code: "999"` but finds no entry in `adapter_crosswalks`.
-2. **The Park:** Instead of crashing, the Adapter saves the entire original JSON payload to the `dead_letter_queue` table.
+1. **The Failure:** The Adapter worker tries to map `facility_code: "999"` but finds no entry in `adapter_crosswalks`.
+2. **The Park:** The worker updates the `adapter_inbox` status to `DLQ` and copies the context into the `dead_letter_queue` table.
 3. **The Alert:** An admin is notified: *"New unmapped facility code '999' found."*
 4. **The Resolution:** The admin adds the mapping to the `adapter_crosswalks` table and clicks **"Reprocess"** on the DLQ entry.
-5. **The Success:** The Adapter pulls the payload from the DLQ, maps it successfully (now that the entry exists), and pushes it to the Ledger.
+5. **The Success:** The Adapter pulls it from the DLQ, maps it successfully, and forwards it to the destination.
 
 **Table Name:** `dead_letter_queue`
 
 | Column | Type | Description |
 | --- | --- | --- |
 | `id` | UUID | Primary Key. |
-| `raw_payload` | JSONB | The original, unmodified data from the source app. |
-| `error_type` | String | `UNMAPPED_NODE`, `UNMAPPED_COMMODITY`, `MALFORMED_JSON`. |
+| `inbox_id` | UUID | Link to the original payload in `adapter_inbox`. |
+| `error_type` | String | `UNMAPPED_NODE`, `UNMAPPED_COMMODITY`, `DESTINATION_REJECTED`. |
 | `failed_value` | String | The specific string that caused the mapping failure. |
 | `status` | String | `PENDING`, `REPROCESSED`, `IGNORED`. |
 | `attempts` | Integer | Number of times reprocessing has been tried. |
 
 ---
 
-### 3. "Creativity & Simplicity": The Contextual Metadata Hook
-
-Here is a "pro-tip" strategy often used in global health systems (like mSupply): **Source-Specific Rules.**
-
-Sometimes, Source A sends "AL 6x1" where a "unit" is a **tablet**, but Source B sends "AL 6x1" where a "unit" is a **full treatment course**.
-
-* Instead of hardcoding this in logic, you store this "Factor" in the `metadata` column of the `adapter_crosswalks` table.
-* **The Logic:** When mapping, the Adapter asks: *"Is there a `multiplier` in the crosswalk metadata for this item?"* If yes, multiply the quantity before sending it to the Ledger.
-* **Result:** You handle two different reporting behaviors with the **same** code and **different** data.
-
----
-
 ### 4. The Integration Audit Trail (Run Logs)
 
-Every time the Adapter wakes up to process a payload, it must leave a "breadcrumb." This is not just for debugging; it’s for **accountability**.
+Every time the Adapter attempts to map and forward a payload, it leaves a "breadcrumb." This is the definitive record of what the Adapter sent and what the Destination replied.
 
 **Artifact:** `adapter_logs`
 
-* **Purpose:** A permanent, immutable record of every attempt to map data.
+* **Purpose:** A permanent, immutable record of every routing attempt.
 * **Fields:**
-* `run_id`: UUID.
-* `contract_version_id`: Link to the specific version of the mapping used.
-* `payload_id`: Link to the raw ingestion record.
-* `status`: `SUCCESS`, `FAILED_MAPPING` (stopped in Adapter), `FAILED_DESTINATION` (rejected by Ledger).
-* `ledger_response`: The JSON response/error from the Ledger module.
-* `execution_time_ms`: Performance tracking.
+  * `run_id`: UUID.
+  * `inbox_id`: Link to the raw ingestion record.
+  * `contract_version_id`: Link to the specific mapping rules used.
+  * `status`: `SUCCESS`, `FAILED_MAPPING` (stopped internally), `FAILED_DESTINATION` (rejected by HTTP endpoint).
+  * `destination_http_code`: The status code returned (e.g. 200, 400).
+  * `destination_response`: The exact JSON text returned by the destination system.
+  * `execution_time_ms`: Performance tracking.
 
-> **Architect's Note:** This log allows you to answer the question: *"Why did this facility’s stock not update on Tuesday?"* You can find the log, see the mapping used, and see the Ledger's specific reason for rejection.
+> **Architect's Note:** If the Destination system rejects the payload, you don't blame the Source. You look in `adapter_logs`, read the `destination_response`, and adjust your mapping JSON accordingly.
 
 ---
 
-### 5. The Dead Letter Management Flow (Replay & Dry-Runs)
+### 5. The Dead Letter Management Flow (Replay & Generic Dry-Runs)
 
-When an admin "fixes" a mapping in the DLQ, they need a safe way to test it.
+When an admin "fixes" a mapping in the DLQ, they need a safe way to test it. This relies on the Adapter injecting the `dry_run` flag defined in the configuration. The Adapter doesn't care what the Destination does with the flag—it just injects it to the specified JSON path and fires it off.
 
 **The Replay State Machine:**
 
 1. **PENDING:** The record is stuck (e.g., Unmapped Node).
-2. **DRY_RUN:** The Admin clicks "Test." The Adapter runs the mapping and sends it to the Ledger with a `dry_run=true` flag.
-* **Result A (Fail):** Admin sees the error, stays in PENDING.
-* **Result B (Success):** Admin sees "Valid Mapping," transitions to READY.
-
-
-3. **APPLIED:** The Admin clicks "Submit." The Adapter sends the real command (`dry_run=false`). The DLQ record moves to `COMPLETED`.
-
-**The Ledger Interface:**
-The Ledger must support a `POST /commands?dry_run=true` endpoint. In this mode, the Ledger performs **all validations** (Negative stock check, UOM check, Schema check) but **rolls back the transaction** before writing to the Event Store. It returns a `200 OK` or `400 Error`.
+2. **DRY_RUN:** The Admin clicks "Test." The Adapter injects the `{ "is_dry_run": true }` flag (or whatever is configured in `dry_run.inject_path`) into the mapped payload, and POSTs it to the destination.
+    * **Result A (Fail):** Destination returns 400 Validation Error. Admin sees the error in the logs, stays in PENDING.
+    * **Result B (Success):** Destination returns 200/202 (having likely rolled back its own transaction due to the flag). Admin sees "Destination Accepted," transitions to READY.
+3. **APPLIED:** The Admin clicks "Submit." The Adapter strips the `dry_run` flag (or sets it to false) and sends the real payload. The DLQ record moves to `COMPLETED`.
 
 ---
 
 ### 6. Mapping Lifecycle & Governance
-
-Your draft for the lifecycle is excellent. Let’s polish the rules to ensure the "Historical Truth" is never broken.
 
 | State | Editability | Execution Role | Deletion Rule |
 | --- | --- | --- | --- |
@@ -275,10 +286,10 @@ When an admin reprocesses 500 records from the DLQ, you need a record of that **
 
 ### Final Summary for your Adapter Doc
 
-To be "Production Grade," your Adapter module now owns:
+To be "Production Grade", the Adapter module is an isolated, async engine that owns:
 
-1. **The Registry:** `mapping_contracts` (The Rules).
-2. **The Crosswalk:** `adapter_crosswalks` (The Dictionary).
-3. **The Buffer:** `dead_letter_queue` (The Hospital for bad data).
-4. **The Audit:** `adapter_logs` (The History).
-5. **The Interface:** A standard way to call the Ledger with a `dry_run` flag.
+1. **The Policies:** `mapping_contracts` (The Rules & Destination URLs).
+2. **The Inbox:** `adapter_inbox` (The Async "Store-and-Forward" Buffer).
+3. **The Crosswalk:** `adapter_crosswalks` (The Dictionary).
+4. **The Hospital:** `dead_letter_queue` (For unmapped or failed data).
+5. **The History:** `adapter_logs` (The immutable record of mapping and forwarding).

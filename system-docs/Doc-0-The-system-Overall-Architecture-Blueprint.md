@@ -19,13 +19,12 @@ Professional supply chain systems rely on specific, proven patterns to maintain 
 
 ### 2. Areas of Focus (The Blueprint)
 
-#### Area A: Ingestion & Translation Engine (The Adapter)
+#### Area A: Ingestion (The Client / External Actor)
 
-* **Purpose:** Normalize unpredictable external JSON into strict internal Ledger Commands.
+* **Purpose:** External systems must normalize their domain data into strict internal Ledger Commands before submission.
 * **Capabilities:** Schema validation; dynamic mapping of JSON paths to internal properties; external-to-internal ID resolution; UOM normalization to Base Units.
-* **I/O:** *Reads* raw JSON webhooks/syncs. *Reads* mapping configurations. *Writes* normalized Commands to the Ledger queue.
-* **Data-Configurable:** Form-to-Command mapping templates; Payload versioning rules.
-* **Boundaries:** *In-Scope:* Structural translation and validation. *Out-of-Scope:* State, balances, business rules, or stock history.
+* **I/O:** *Reads* raw field data. *Writes* normalized Commands to the Ledger queue via API.
+* **Boundaries:** *In-Scope:* Structural translation and validation (done client-side). *Out-of-Scope:* State, balances, business rules, or stock history.
 
 #### Area B: Idempotency & Lifecycle Manager (The Ledger)
 
@@ -48,12 +47,12 @@ This is the most critical logic to get right. In an append-only ledger, you cann
 
 ##### The Shared Kernel (The Common Language, The Ledger)
 
-* **Purpose:** Provide the immutable definitions and registries used by both the Adapter and the Ledger.
+* **Purpose:** Provide the immutable definitions and registries used by the Ledger.
 * **Artifacts:**
 * **Commodity Registry:** Canonical list of items (IDs, Names, Categories).
 * **UoM Registry:** Base units and conversion factors (e.g., 1 Box = 100 Tablets).
 * **Node Hierarchy:** The source of truth for all Supply Nodes and their types.
-* **Responsibility:** Ensures that when the Adapter says `Item_A`, the Ledger knows exactly what that means mathematically.
+* **Responsibility:** Ensures that when a Client Command specifies `Item_A`, the Ledger knows exactly what that means mathematically.
 
 ---
 
@@ -94,15 +93,15 @@ Handling the "Push" logistics requires parking the stock in a virtual space so i
 
 ---
 
-### 3. Responsibility Split: Adapter vs. Ledger
+### 3. Responsibility Split: Client vs. Ledger
 
-| Responsibility | Adapter Module (Stateless) | Ledger Module (Stateful) |
+| Responsibility | Client App / Submitting Actor | Ledger Module (Stateful) |
 | --- | --- | --- |
 | **Trust Level** | Zero Trust (Sanitizes everything) | Absolute Authority (Source of Truth) |
 | **Data Format** | JSON parsing & JSON Path extraction | Strongly typed Internal Commands |
-| **UOM** | Converts "Boxes"  "Tablets" using config | Only knows "Tablets" (Base Units) |
-| **State** | None. Forgets payloads after translating. | Owns the Event Log and Current Balances. |
-| **Edits/Deletes** | Detects `status:deleted` and forwards a command | Executes the Compensating Transaction math |
+| **UOM** | Converts to Base Units before submission | Only knows "Tablets" (Base Units) |
+| **State** | None. Should just buffer and forward. | Owns the Event Log and Current Balances. |
+| **Edits/Deletes** | Detects updates and forwards a command | Executes the Compensating Transaction math |
 
 ---
 
@@ -173,11 +172,11 @@ Approval is almost never "one size fits all." It is highly dependent on the **No
 
 With Area E included, the journey of a Command changes from a direct line to a gated workflow.
 
-1. **Ingestion:** Adapter normalizes the data.
+1. **Ingestion:** Client System submits the structured Ledger Command.
 2. **Idempotency (Area B):** Ledger ensures we haven't seen this `source_event_id` before.
 3. **Governance Check (Area E):** * The `ApprovalResolver` checks the hierarchy.
 * **If No Approval Needed:** Command proceeds immediately to Area C.
-* **If Approval Needed:** Command is written to `pending_approvals` with status `AWAITING`. The Ledger sends a `202 Accepted (Pending Approval)` response to the Adapter.
+* **If Approval Needed:** Command is written to `pending_approvals` with status `AWAITING`. The Ledger sends a `202 Accepted (Pending Approval)` response to the Client.
 
 
 4. **Action:** A supervisor logs in, reviews the `AWAITING` queue, and clicks **Approve**.

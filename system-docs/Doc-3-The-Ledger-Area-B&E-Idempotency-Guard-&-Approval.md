@@ -63,7 +63,7 @@ If Area B says "This is new," the Ledger then evaluates the **Approval Policy**.
 
 3. **Stage Command:** * Write the normalized command to `ledger_staged_commands`.
 * Update `ledger_idempotency_registry` status to `STAGED`.
-* Return `202 Accepted (Staged for Approval)` to the Adapter.
+* Return `202 Accepted (Staged for Approval)` to the calling Client.
 
 
 4. **Finalize (Post-Approval):** * When the supervisor clicks "Approve," the Ledger pulls the `payload` from `ledger_staged_commands` and pushes it to the **Event Store (Area C)**.

@@ -70,9 +70,9 @@ A background worker (Cron) runs every night and performs the following:
 
 ---
 
-### 4. Integration with the "Adapter" and "Approval"
+### 4. Integration with the "Client" and "Approval"
 
-* **Adapter Role:** The Adapter must ensure that a "Receipt" payload includes the `transfer_id` so Area D knows which "In-Transit" record to close.
+* **Client Role:** The Submitting Client must ensure that a "Receipt" payload includes the `transfer_id` so Area D knows which "In-Transit" record to close.
 * **Approval Role:** If a "Receipt" shows a significant **Discrepancy** (e.g., Warehouse sent 100, Clinic received 20), **Area E** should intercept this for investigation before Area C is allowed to reconcile the loss.
 
 ---
