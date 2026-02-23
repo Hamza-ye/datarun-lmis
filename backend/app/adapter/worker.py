@@ -16,21 +16,28 @@ class AdapterWorker:
     """
     
     @staticmethod
-    async def process_batch(batch_size: int = 50):
-        async with async_session_maker() as session:
-            # 1. Fetch pending payloads
-            stmt = select(AdapterInbox).where(AdapterInbox.status == InboxStatus.RECEIVED).limit(batch_size)
-            result = await session.execute(stmt)
-            inbox_items = result.scalars().all()
+    async def process_batch(batch_size: int = 50, session: AsyncSession = None):
+        if session:
+            return await AdapterWorker._do_process_batch(session, batch_size)
             
-            if not inbox_items:
-                return 0
-                
-            for item in inbox_items:
-                await AdapterWorker.process_single(session, item)
-                
-            await session.commit()
-            return len(inbox_items)
+        async with async_session_maker() as new_session:
+            return await AdapterWorker._do_process_batch(new_session, batch_size)
+
+    @staticmethod
+    async def _do_process_batch(session: AsyncSession, batch_size: int):
+        # 1. Fetch pending payloads
+        stmt = select(AdapterInbox).where(AdapterInbox.status == InboxStatus.RECEIVED).limit(batch_size)
+        result = await session.execute(stmt)
+        inbox_items = result.scalars().all()
+        
+        if not inbox_items:
+            return 0
+            
+        for item in inbox_items:
+            await AdapterWorker.process_single(session, item)
+            
+        await session.commit()
+        return len(inbox_items)
 
     @staticmethod
     async def process_single(session: AsyncSession, item: AdapterInbox):
@@ -82,16 +89,21 @@ class AdapterWorker:
             else:
                 item.status = InboxStatus.ERROR
         except Exception as e:
+            print(f"WORKER ERROR: {e}")
             item.status = InboxStatus.ERROR
             
     @staticmethod
     async def run_loop(interval_seconds: int = 5):
         """Infinite loop designed to run alongside FastAPI"""
-        while True:
-            try:
-                processed = await AdapterWorker.process_batch()
-                if processed == 0:
+        try:
+            while True:
+                try:
+                    processed = await AdapterWorker.process_batch()
+                    if processed == 0:
+                        await asyncio.sleep(interval_seconds)
+                except Exception as e:
+                    print(f"Adapter Worker Loop Error: {e}")
                     await asyncio.sleep(interval_seconds)
-            except Exception as e:
-                print(f"Adapter Worker Loop Error: {e}")
-                await asyncio.sleep(interval_seconds)
+        except asyncio.CancelledError:
+            # Re-raise to let the external caller (FastAPI lifespan) handle the clean exit
+            raise

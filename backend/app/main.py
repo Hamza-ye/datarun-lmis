@@ -5,12 +5,23 @@ from core.database import engine, Base
 from app.adapter.api.router import router as adapter_router
 from app.ledger.api.router import ledger_router, gatekeeper_router
 
+import asyncio
+from app.adapter.worker import AdapterWorker
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Database initialization is now handled strictly by Alembic migrations.
-    # We no longer auto-create tables on boot.
+    # 1. Start Background Worker
+    worker_task = asyncio.create_task(AdapterWorker.run_loop(interval_seconds=5))
+    
     yield
-    # Clean up connections
+    
+    # 2. Graceful Shutdown
+    worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        print("Adapter Worker shutdown cleanly.")
+        
     await engine.dispose()
 
 app = FastAPI(

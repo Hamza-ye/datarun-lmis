@@ -63,5 +63,21 @@ Inside the Ledger module itself, execution will be **Synchronous**, relying on P
 * We will *not* introduce Kafka/RabbitMQ into the core infrastructure.
 * Staging commands (Area E) and Idempotency (Area B) will use PostgreSQL tables as their "queues."
 
-**Consequence:**
+**Conclusion:**
 Massively simplified infrastructure. A Postgres DB is sufficient to handle hundreds of transactions per second, which far exceeds the current requirements for the LMIS. By avoiding distributed message queues, we eliminate the complexity of distributed transactions, two-phase commits, and message broker maintenance.
+
+---
+
+## ADR-005: Async Background Tasks via FastAPI Application Lifespan
+
+**Context:**
+The Adapter component uses a "Store, Cleanse & Forward" pattern (ADR-001). When an external payload is received via the API, the system responds immediately with a `202 Accepted` while postponing the heavy mapping and forwarding logic. A background worker loop is required to continuously poll the `adapter_inbox`.
+
+**Decision:**
+We will implement background workers utilizing Python's native `asyncio.create_task()` directly bound to the FastAPI application's `@asynccontextmanager lifespan`.
+*   We explicitly discard introducing heavy task queues like **Celery**, **RQ**, or **Redis**.
+*   The worker tasks must continuously trap and log their own internal `Exception` events to avoid crashing the server loop.
+*   The application explicitly traps the `asyncio.CancelledError` on server shutdown to gracefully wrap up any active database transactions.
+
+**Consequence:**
+By staying native, we maintain the strict definition of our "zero-dependency" Modular Monolith (ADR-001). We guarantee that deployment consists purely of the Python API and a PostgreSQL database. The tradeoff is that background tasks exist completely in-memory tied to the API instances processes, scaling horizontally exactly linearly alongside the API instances.

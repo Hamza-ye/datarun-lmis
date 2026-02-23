@@ -67,7 +67,7 @@ Instead of writing hard-coded `if/else` statements in your Adapter code, we give
 The pipeline does four asynchronous things:
 
 1. **Receive & Store (The Inbox):** Receive the raw data, validate its basic structure, save it to the `adapter_inbox`, and immediately return a `202 Accepted` to the source.
-2. **Extract:** A background worker pulls the raw data from the Inbox using JSONPath.
+2. **Extract:** An native `asyncio` background worker (attached directly to the FastAPI application `lifespan` event loop) pulls the raw data from the Inbox continuously.
 3. **Cleanse (Crosswalks):** Run the messy data through defined normalization rules and dictionaries.
 4. **Emit & Forward:** Construct the final Payload based on the configuration and POST it to the destination URL.
 
