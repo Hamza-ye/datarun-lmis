@@ -7,9 +7,8 @@ from app.ledger.api.router import ledger_router, gatekeeper_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables on startup (for MVP - usually Alembic handles this)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Database initialization is now handled strictly by Alembic migrations.
+    # We no longer auto-create tables on boot.
     yield
     # Clean up connections
     await engine.dispose()
