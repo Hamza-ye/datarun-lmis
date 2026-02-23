@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api/adapter", tags=["Adapter"])
 class ExternalPayload(BaseModel):
     source_system: str
     mapping_profile: str
+    source_event_id: str | None = None
     data: Dict[str, Any]
 
 @router.post("/inbox", status_code=status.HTTP_202_ACCEPTED)
@@ -27,11 +28,26 @@ async def receive_external_payload(
     """
     actor.require_role("external_system")
     
-    # Store in raw inbox 
-    from app.adapter.models.engine import AdapterInbox, InboxStatus
+    from sqlalchemy.future import select
+    from fastapi import HTTPException
+    from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
     
+    # Route matching: resolve active contract
+    stmt = select(MappingContract).where(
+        MappingContract.id == payload.mapping_profile,
+        MappingContract.status == "ACTIVE"
+    )
+    contract = (await db_session.execute(stmt)).scalars().first()
+    
+    if not contract:
+        raise HTTPException(status_code=400, detail=f"No active mapping contract found for profile '{payload.mapping_profile}'")
+    
+    # Store in raw inbox 
     inbox_record = AdapterInbox(
         source_system=payload.source_system,
+        mapping_id=contract.id,
+        mapping_version=contract.version,
+        source_event_id=payload.source_event_id,
         payload=payload.data,
         status=InboxStatus.RECEIVED
     )

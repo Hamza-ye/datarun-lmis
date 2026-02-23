@@ -27,8 +27,18 @@ async def test_health_check(async_client: AsyncClient):
     assert response.json() == {"status": "ok", "architecture": "modular_monolith"}
 
 @pytest.mark.asyncio
-async def test_adapter_inbox_requires_external_role(async_client: AsyncClient):
+async def test_adapter_inbox_requires_external_role(async_client: AsyncClient, db_session):
     """A Ledger worker shouldn't be allowed to submit into the eternal inbox."""
+    from app.adapter.models.engine import MappingContract
+    contract = MappingContract(
+        id="DHIS2_V1",
+        version="1.0",
+        status="ACTIVE",
+        dsl_config={}
+    )
+    db_session.add(contract)
+    await db_session.commit()
+
     payload = {
         "source_system": "DHIS2",
         "mapping_profile": "DHIS2_V1",

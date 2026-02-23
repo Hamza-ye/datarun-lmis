@@ -3,6 +3,8 @@ from sqlalchemy.future import select
 
 from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, DeadLetterQueue
 from app.adapter.worker import AdapterWorker
+from unittest.mock import patch
+import httpx
 
 DUMMY_DSL = {
     "contract_info": {
@@ -55,7 +57,10 @@ DUMMY_DSL = {
 }
 
 @pytest.mark.asyncio
-async def test_worker_process_batch_happy_path(db_session):
+@patch('httpx.AsyncClient.request')
+async def test_worker_process_batch_happy_path(mock_request, db_session):
+    mock_request.return_value = httpx.Response(202, text="OK")
+    
     # Setup test contract
     contract = MappingContract(
         id="worker_test_contract",
@@ -66,6 +71,8 @@ async def test_worker_process_batch_happy_path(db_session):
     
     inbox_valid = AdapterInbox(
         source_system="test_system",
+        mapping_id="worker_test_contract",
+        mapping_version="1.0.0",
         payload={
             "id": "evt_101",
             "occurred_at": "2026-02-23T00:00:00Z",
@@ -109,6 +116,8 @@ async def test_worker_process_batch_dlq(db_session):
     
     inbox_bad = AdapterInbox(
         source_system="test_system",
+        mapping_id="worker_test_contract",
+        mapping_version="1.0.0",
         payload={
             "test_flag": "True",
             # We omit the 'id' which is explicitly required by the DSL envelope.

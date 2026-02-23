@@ -7,8 +7,10 @@ from core.database import Base
 
 class InboxStatus(str, enum.Enum):
     RECEIVED = "RECEIVED"
+    PROCESSING = "PROCESSING"
     MAPPED = "MAPPED"
     FORWARDED = "FORWARDED"
+    RETRY = "RETRY"
     DLQ = "DLQ"
     ERROR = "ERROR"
 
@@ -17,6 +19,9 @@ class AdapterInbox(Base):
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_system = Column(String, nullable=False, index=True)
+    mapping_id = Column(String, nullable=True)
+    mapping_version = Column(String, nullable=True)
+    source_event_id = Column(String, nullable=True, index=True)
     payload = Column(JSON, nullable=False)
     status = Column(Enum(InboxStatus, name="inbox_status"), nullable=False, default=InboxStatus.RECEIVED)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -50,4 +55,15 @@ class DeadLetterQueue(Base):
     error_reason = Column(String, nullable=False)
     context_data = Column(JSON, nullable=True)
     status = Column(String, nullable=False, default="UNRESOLVED") # UNRESOLVED, REPROCESSED, DISCARDED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class AdapterLogs(Base):
+    __tablename__ = "adapter_logs"
+    
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    inbox_id = Column(Uuid(as_uuid=True), nullable=False, index=True)
+    destination_url = Column(String, nullable=False)
+    request_payload = Column(JSON, nullable=False)
+    response_status = Column(String, nullable=True)
+    response_body = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

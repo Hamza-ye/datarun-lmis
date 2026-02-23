@@ -25,6 +25,9 @@ class MapperEngine:
             source_event_id = JsonPathExtractor.extract_single(payload, block.envelope.source_event_id.path)
             timestamp = JsonPathExtractor.extract_single(payload, block.envelope.timestamp.path)
             
+            if not source_event_id or not timestamp:
+                raise ValueError(f"DLQ_TRIGGER: Missing required envelope fields (source_event_id/timestamp) for mapped path. ID: {source_event_id}, TS: {timestamp}")
+            
             # --- 2. Static Injections (e.g. command_type: RECEIPT) ---
             static_fields = block.static_injection
             
