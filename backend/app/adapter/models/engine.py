@@ -26,7 +26,7 @@ class MappingContract(Base):
     __tablename__ = "mapping_contracts"
     
     id = Column(String, primary_key=True)  # e.g., 'hf_receipt_902'
-    version = Column(String, nullable=False)
+    version = Column(String, primary_key=True)
     status = Column(String, nullable=False) # ACTIVE, DEPRECATED
     dsl_config = Column(JSON, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -110,9 +110,9 @@ async def test_worker_process_batch_dlq(db_session):
     inbox_bad = AdapterInbox(
         source_system="test_system",
         payload={
-            "id": "evt_102",
             "test_flag": "True",
-            # Omit occurred_at to cause timestamp.replace() failure
+            # We omit the 'id' which is explicitly required by the DSL envelope.
+            # This causes the Engine to fail extraction/validation and route the payload to DLQ/Error.
             "items": [
                 {"qty": 10}
             ]
