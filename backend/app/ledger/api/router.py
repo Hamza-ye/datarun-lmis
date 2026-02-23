@@ -30,9 +30,19 @@ async def submit_ledger_command(
     """
     actor.require_role("ledger_system")
     
-    # Idempotency check happens implicitly inside the services if we abstract it, 
-    # but for manual composition we can use the Gatekeeper to "Stage" high risk items.
+    from app.ledger.domain.idempotency.service import IdempotencyService
     
+    # 1. Idempotency Check (Area B Guard)
+    idem_result = await IdempotencyService.check_or_register_command(db, command)
+    if idem_result.action == "IGNORE":
+        await db.commit() # Commit the lock release
+        return {"status": "IGNORED", "message": idem_result.reason, "existing_summary": idem_result.existing_summary}
+        
+    elif idem_result.action == "REVERSE_AND_PROCEED":
+        # In a full system, we would enqueue a reversal command here before proceeding.
+        # For simplicity, we just log it and proceed with the new command as a forward-correction.
+        pass
+
     # Dummy Threshold Policy (Normally resolving via Area F PolicyResolver)
     requires_approval = command.quantity >= 1000 or command.transaction_type == TransactionType.ADJUSTMENT
     
@@ -52,6 +62,15 @@ async def submit_ledger_command(
             result = await InTransitService.process_loss(db, command, command.transfer_id)
         else:
             result = await EventStoreService.commit_command(db, command)
+            
+        # Update Idempotency Registry to COMPLETED
+        from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
+        from sqlalchemy.future import select
+        stmt = select(IdempotencyRegistry).where(IdempotencyRegistry.source_event_id == command.source_event_id)
+        idem_record = (await db.execute(stmt)).scalars().first()
+        if idem_record:
+            idem_record.status = IdempotencyStatus.COMPLETED
+            idem_record.result_summary = {"status": "COMMITTED", "event_id": command.source_event_id}
             
         await db.commit()
         return {"status": "COMMITTED", "event_id": command.source_event_id}

@@ -204,7 +204,16 @@ async def historical_topology_correction(
     
     from sqlalchemy import and_, or_
     
-    # Find the specific row that was "active" on the effective date
+    # 1. Idempotency / Double-Click Guard: Check if the exact split requested ALREADY exists
+    stmt_check = select(NodeRegistry).where(
+        NodeRegistry.uid == node_id,
+        NodeRegistry.parent_id == payload.new_parent_id
+    )
+    for existing_split in (await db.execute(stmt_check)).scalars().all():
+        if str(existing_split.valid_from)[:10] == str(payload.effective_date)[:10]:
+            return {"message": "Historical topology already corrected for this date."}
+        
+    # 2. Find the specific row that was "active" on the effective date
     stmt = select(NodeRegistry).where(
         NodeRegistry.uid == node_id,
         NodeRegistry.valid_from <= payload.effective_date,
@@ -212,7 +221,7 @@ async def historical_topology_correction(
             NodeRegistry.valid_to == None,
             NodeRegistry.valid_to > payload.effective_date
         )
-    )
+    ).with_for_update() # ROW LEVEL LOCK FOR IDEMPOTENCY
     historical_node = (await db.execute(stmt)).scalars().first()
     
     if not historical_node:

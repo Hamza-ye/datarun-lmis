@@ -67,6 +67,12 @@ async def get_current_actor(credentials: HTTPAuthorizationCredentials = Security
             roles=["ledger_supervisor"],
             allowed_nodes=["DIST-A", "CLINIC_1"]
         )
+    elif token == "mock_system_admin_token":
+        return ActorContext(
+            actor_id="admin_1",
+            roles=["system_admin"],
+            allowed_nodes=["GLOBAL"]
+        )
          
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
