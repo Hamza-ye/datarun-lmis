@@ -7,3 +7,6 @@ asyncpg
 pytest
 pytest-asyncio
 aiosqlite
+jsonpath-ng
+httpx
+aiocron
