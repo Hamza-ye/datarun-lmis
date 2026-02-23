@@ -10,6 +10,9 @@ from app.ledger.domain.gatekeeper.service import GatekeeperService
 from app.ledger.domain.event_store.service import EventStoreService
 from app.ledger.domain.in_transit.service import InTransitService
 from app.ledger.schemas.command import TransactionType
+from typing import List, Optional
+from app.ledger.schemas.reporting import StockBalanceResponse, LedgerHistoryResponse
+from app.ledger.domain.reporting.service import ReportingService
 
 ledger_router = APIRouter(prefix="/api/ledger", tags=["Ledger Core"])
 gatekeeper_router = APIRouter(prefix="/api/ledger/gatekeeper", tags=["Ledger Gatekeeper"])
@@ -84,3 +87,36 @@ async def resolve_staged_command(
         
     await db.commit()
     return {"status": "RESOLVED", "action": action_type.value}
+
+
+@ledger_router.get("/balances", response_model=List[StockBalanceResponse])
+async def get_stock_balances(
+    node_id: Optional[str] = None,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    CQRS Read API: Fetches current pre-calculated stock balances.
+    Automatically filters results based on the JWT `allowed_nodes` claims.
+    Optionally filter to a specific valid node_id.
+    """
+    # Any authenticated user with a valid token can query the Ledger Read API, 
+    # but the ReportingService strictly filters what they get back.
+    balances = await ReportingService.get_balances(db, actor, node_id)
+    return balances
+
+@ledger_router.get("/history/{node_id}/{item_id}", response_model=List[LedgerHistoryResponse])
+async def get_inventory_history(
+    node_id: str,
+    item_id: str,
+    limit: int = 50,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    CQRS Read API: Fetches the immutable event log explaining how a balance arrived at its current state.
+    Strictly asserts the actor has access to the requested `node_id`.
+    """
+    history = await ReportingService.get_history(db, actor, node_id, item_id, limit)
+    return history
+
