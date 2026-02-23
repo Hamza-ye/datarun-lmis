@@ -263,9 +263,10 @@ To prevent data loss when downstream systems are down, or when mapping rules are
 | --- | --- | --- |
 | `id` | UUID | Primary Key (Internal Inbox ID). |
 | `source_system` | String | e.g., `commcare_mobile`. |
-| `raw_payload` | JSONB | The exact bits submitted by the external app. |
-| `received_at` | Timestamp | When the payload hit the API. |
-| `status` | Enum | `RECEIVED`, `MAPPED`, `FORWARDED`, `DLQ`. |
+| `payload` | JSONB | The exact bits submitted by the external app. |
+| `status` | Enum | `RECEIVED`, `MAPPED`, `FORWARDED`, `DLQ`, `ERROR`. |
+| `created_at` | Timestamp | When the payload hit the API. |
+| `updated_at` | Timestamp | Last status change. |
 
 **The Workflow:** The Source POSTs to the Adapter. The Adapter saves to `adapter_inbox`. The Adapter immediately returns `HTTP 202 Accepted` to the Source. The Source disconnects. A background worker then picks up the `RECEIVED` row and starts the mapping process.
 
@@ -283,8 +284,8 @@ This table acts as the "External Dictionary" mentioned in your JSON contract. It
 | `namespace` | String | Groups mappings (e.g., `dhis2_nodes`, `odk_commodities`). |
 | `source_value` | String | The "messy" value from the external app (e.g., `act_80`). |
 | `internal_id` | String | The clean ID required by the Destination (e.g., `PROD-AL-01`). |
-| `is_active` | Boolean | Allows deactivating a mapping without deleting history. |
-| `metadata` | JSONB | **Creative addition:** Store contextual defaults or multipliers specific to this source. |
+| `metadata_json` | JSONB | **Creative addition:** Store contextual defaults or multipliers specific to this source. |
+| `created_at` | Timestamp | Record creation time. |
 
 ---
 
@@ -298,10 +299,27 @@ In professional systems, we assume **something will break.** The DLQ is where "I
 | --- | --- | --- |
 | `id` | UUID | Primary Key. |
 | `inbox_id` | UUID | Link to the original payload in `adapter_inbox`. |
-| `error_type` | String | `UNMAPPED_NODE`, `UNMAPPED_COMMODITY`, `DESTINATION_REJECTED`. |
-| `failed_value` | String | The specific string that caused the mapping failure. |
-| `status` | String | `PENDING`, `REPROCESSED`, `IGNORED`. |
-| `attempts` | Integer | Number of times reprocessing has been tried. |
+| `source_system` | String | From where the payload originated. |
+| `error_reason` | String | Description of the error. |
+| `context_data` | JSONB | Supplementary error info (e.g. stack trace or metadata). |
+| `status` | String | `UNRESOLVED`, `REPROCESSED`, `DISCARDED`. |
+| `created_at` | Timestamp | When the record entered DLQ. |
+
+---
+
+### 3.5 The Mapping Contracts
+
+Stores the pure JSON DSL that powers the transformation engine.
+
+**Table Name:** `mapping_contracts`
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | String | Primary Key (e.g., `hf_receipt_902`). |
+| `version` | String | Semantic version of the contract. |
+| `status` | String | `ACTIVE`, `DEPRECATED`. |
+| `dsl_config` | JSONB | The JSON DSL config blob. |
+| `created_at` | Timestamp | Record creation time. |
 
 ---
 

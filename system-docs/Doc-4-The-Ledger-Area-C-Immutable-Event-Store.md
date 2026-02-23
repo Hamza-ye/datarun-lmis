@@ -7,17 +7,17 @@ This table stores "Facts." Once a row is written here, it is never updated or de
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `event_id` | **BigInt (PK)** | Auto-incrementing sequence (global order). |
+| `id` | **UUID (PK)** | Universal unique identifier. |
 | `source_event_id` | `String` | Reference to the original submission (links to Area B/E). |
 | `node_id` | `String` | Internal ID of the facility or MU. |
 | `item_id` | `String` | Internal ID of the commodity (Shared Kernel). |
 | `transaction_type` | `Enum` | `RECEIPT`, `ISSUE`, `TRANSFER`, `ADJUSTMENT`, `STOCK_COUNT`, `REVERSAL`. |
-| `quantity` | **BigInt** | The delta. Always in **Base Units** (e.g., tablets). |
-| `batch_id` | `String (Opt)` | For tracking specific lots/batches. |
-| `expiry_date` | `Date (Opt)` | Essential for FEFO (First Expired, First Out) logic. |
+| `quantity` | **BigInt** | The absolute delta. Always in **Base Units** (e.g., tablets). |
+| `running_balance` | **BigInt** | Snapshot of the balance at the moment this was inserted. |
 | `occurred_at` | `Timestamp` | The "Business Time" (when it happened in the field). |
-| `recorded_at` | `Timestamp` | The "System Time" (when the DB wrote the row). |
-| `metadata` | `JSONB` | Contextual info (e.g., "Reason: Damaged in transit"). |
+| `created_at` | `Timestamp` | The "System Time" (when the DB wrote the row). |
+
+*(Note: `batch_id` and `expiry_date` tracking are deferred for post-MVP enhancements).*
 
 ---
 
@@ -30,13 +30,12 @@ Querying the `inventory_events` table to find the current balance of 500 items a
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `node_id` | **String (Composite PK)** | The location. |
-| `item_id` | **String (Composite PK)** | The commodity. |
-| `batch_id` | **String (Composite PK)** | (Optional) if tracking by batch. |
-| `quantity_on_hand` | **BigInt** | The running total. |
+| `id` | **UUID (PK)** | Surrogate key. |
+| `node_id` | **String** | The location (Constrained unique with `item_id`). |
+| `item_id` | **String** | The commodity. |
+| `quantity` | **BigInt** | The running total. |
 | `version` | **Integer** | Used for Optimistic Concurrency Control. Increments on every update. |
-| `last_event_id` | `BigInt` | Pointer to the last event processed (for consistency checks). |
-| `updated_at` | `Timestamp` | Last time the balance changed. |
+| `last_updated` | `Timestamp` | Last time the balance changed. |
 
 ---
 
@@ -49,7 +48,7 @@ In a high-throughput system, it is possible for two commands affecting the *same
 1. **Read:** The Ledger reads the current projection for Node A / Item X (e.g., `quantity: 100`, `version: 5`).
 2. **Math:** The Ledger processes a `RECEIPT` of 10. The new target quantity is `110`. The target version is `6`.
 3. **Atomic Update:** The database executes: 
-   `UPDATE stock_balances SET quantity_on_hand = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5;`
+   `UPDATE ledger_stock_balances SET quantity = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5;`
 4. **The Guard:** If another thread updated the row a millisecond earlier, the `version` would now be `6`. Our `UPDATE` using `WHERE version = 5` will affect **0 rows**.
 5. **The Retry:** The Ledger detects that 0 rows were updated, throwing a `StaleObjectException`. It briefly pauses, re-reads the new state (`version 6`), performs the math again, and successfully commits to `version 7`.
 

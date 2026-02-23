@@ -21,9 +21,22 @@ This is the "Work-in-Progress" table. It tracks every open transfer until it is 
 | `item_id` | `String` | The commodity. |
 | `qty_shipped` | `BigInt` | Total sent (Base Units). |
 | `qty_received` | `BigInt` | Total acknowledged by destination so far. |
-| `status` | `Enum` | `OPEN`, `PARTIAL`, `COMPLETED`, `STALE_AUTO_CLOSED`. |
+| `status` | `Enum` | `OPEN`, `PARTIAL`, `COMPLETED`, `STALE_AUTO_CLOSED`, `FAILED_AUTO_CLOSE`. |
 | `dispatched_at` | `Timestamp` | When Area C recorded the `DEBIT` from source. |
-| `auto_close_after` | `Timestamp` | Calculated deadline (from Config Hierarchy). |
+| `auto_close_after` | `Timestamp(Opt)` | Calculated deadline (from Config Hierarchy). |
+| `created_at` | `Timestamp` | DB record creation time. |
+| `updated_at` | `Timestamp` | Last status modification. |
+
+**Table Name:** `ledger_internal_dlq`
+*Purpose: Catches failures in internal orchestration mechanisms (e.g., auto-receipt failing).*
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | **UUID (PK)** | Unique error ID. |
+| `source_process` | `String` | e.g., 'AREA_D_AUTO_RECEIPT'. |
+| `reference_id` | `String` | Link to the failed `transfer_id`. |
+| `error_message` | `String` | The exception reason thrown by Area C. |
+| `created_at` | `Timestamp` | When the failure occurred. |
 
 ---
 

@@ -14,11 +14,11 @@ In the real world, a "Clinic" might move from "District A" to "District B." If w
 To prevent this, the Ledger models Nodes using **Slowly Changing Dimensions (Type 2)** by tracking the **validity period** of a relationship.
 
 ```markdown
-**Table Schema Concept:** `nodes`
-| `id` (ULID) | `uid` (11 char) | `code` | `name` | `node_type` | `parent_id` | `valid_from` | `valid_to` | `meta` (jsonb) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `01H...V3` | `CLX12345678` | `CX-01` | `Clinic X` | `HF` | `01H...A1` | `2020-01-01` | `2026-03-01` | `{}` |
-| `01J...M4` | `CLX12345678` | `CX-01` | `Clinic X` | `HF` | `01H...B2` | `2026-03-01` | `NULL` | `{}` |
+**Table Schema Concept:** `kernel_node_registry`
+| `id` (UUID) | `uid` (String) | `code` | `name` | `node_type` | `parent_id` | `valid_from` | `valid_to` | `meta_data` (jsonb) | `created_at` | `updated_at` |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `01H...` | `CLX1234` | `CX-01` | `Clinic X` | `HF` | `01H...A1` | `2020-01-01` | `2026-03-01` | `{}` | `...` | `...` |
+| `01J...` | `CLX1234` | `CX-01` | `Clinic X` | `HF` | `01H...B2` | `2026-03-01` | `NULL` | `{}` | `...` | `...` |
 ```
 
 **Rule:** When Area E evaluates the Approval Policy for a transaction that occurred on `2025-06-15`, it joins against `node_hierarchy` where `'2025-06-15' BETWEEN valid_from AND valid_to`. This guarantees temporal accuracy.
@@ -37,10 +37,10 @@ If the Ministry decides a "Box of Paracetamol" is now 50 tablets instead of 100,
 1. **Base Units Only:** The Ledger (Area C) ONLY computes using the `base_unit`. It knows nothing about "Boxes."
 2. **New Pack, New ID:** If the packaging changes, you must create a *new* Commodity ID or a new Package ID in the registry. 
 
-**Table Schema Concept:** `commodity_registry`
-| `item_id` | `name` | `base_unit` | `status` |
-| --- | --- | --- | --- |
-| `PARAM-01` | Paracetamol 500mg | `TABLET` | `ACTIVE` |
+**Table Schema Concept:** `kernel_commodity_registry`
+| `item_id` (PK) | `code` | `name` | `base_unit` | `status` | `created_at` | `updated_at` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PARAM-01` | `PRM-500`| Paracetamol 500mg | `TABLET` | `ACTIVE` | `...` | `...` |
 
 **Table Schema Concept:** `commodity_packages` (Only used by Clients/Adapters, never by Area C)
 | `package_id` | `item_id` | `uom_name` | `base_unit_multiplier` | `is_active` |
@@ -54,12 +54,12 @@ If the Ministry decides a "Box of Paracetamol" is now 50 tablets instead of 100,
 
 Area B, D, and E rely on business rules that change over time. These rules shouldn't be hardcoded into the Python logic.
 
-**Table Schema Concept:** `system_policies`
-| `policy_key` | `applies_to_node` | `applies_to_item` | `config_json` |
-| --- | --- | --- | --- |
-| `approval_required` | `GLOBAL` | `ALL` | `{"transaction_types": ["ADJUSTMENT"], "threshold_usd": 500}` |
-| `auto_receive_days` | `WH_KAMPALA` | `ALL` | `{"days": 14}` |
-| `negative_stock` | `GLOBAL` | `ALL` | `{"behavior": "BLOCK"}` |
+**Table Schema Concept:** `kernel_system_policy`
+| `id` (UUID PK) | `policy_key` | `applies_to_node` | `applies_to_item` | `config` (json) | `created_at` | `updated_at` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `...` | `approval_required` | `GLOBAL` | `ALL` | `{"transaction_types": ["ADJUSTMENT"], "threshold_usd": 500}` | `...` | `...` |
+| `...` | `auto_receive_days` | `WH_KAMPALA` | `ALL` | `{"days": 14}` | `...` | `...` |
+| `...` | `negative_stock` | `GLOBAL` | `ALL` | `{"behavior": "BLOCK"}` | `...` | `...` |
 
 ### Resolution Hierarchy
 When a module queries a policy, the Kernel executes a Fallback chain:

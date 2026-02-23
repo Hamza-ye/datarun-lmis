@@ -13,7 +13,7 @@ Before the Ledger even looks at a command, it checks this registry. If it has se
 | `created_at` | `Timestamp` | When the first attempt happened. |
 | `updated_at` | `Timestamp` | For tracking retry attempts. |
 
-> **Architect's Note:** In a high-traffic system, this table should be backed by a unique constraint on `source_event_id`. If a race condition occurs where two identical requests hit at the same millisecond, the database's primary key constraint is your final line of defense.
+> **Architect's Note:** In a high-traffic system, this table must have a unique constraint on `source_event_id`. The database's unique index is your final line of defense against concurrent duplicate inserts.
 
 ---
 
@@ -34,6 +34,7 @@ If Area B says "This is new," the Ledger then evaluates the **Approval Policy**.
 | `status` | `Enum` | `AWAITING`, `APPROVED`, `REJECTED`, `EXPIRED`. |
 | `node_id` | `String` | The facility or MU the command belongs to. |
 | `created_at` | `Timestamp` | Audit timestamp. |
+| `updated_at` | `Timestamp` | When the status last changed. |
 
 **Table Name:** `ledger_approval_audit`
 *Purpose: The legal record of "Who said this was okay?"*
@@ -45,7 +46,7 @@ If Area B says "This is new," the Ledger then evaluates the **Approval Policy**.
 | `actor_id` | `String` | The ID of the supervisor who took action. |
 | `action` | `Enum` | `APPROVE`, `REJECT`. |
 | `comment` | `Text` | Justification for the approval/rejection. |
-| `occured_at` | `Timestamp` | Exact moment of action. |
+| `occurred_at` | `Timestamp` | Exact moment of action. |
 
 ---
 
