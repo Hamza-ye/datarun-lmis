@@ -169,3 +169,8 @@ cython_debug/
 # Specific environment files
 .env.*
 !.env.example
+
+
+err.txt
+pytest_integration_out.txt
+test_err.txt
