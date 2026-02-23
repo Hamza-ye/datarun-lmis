@@ -40,6 +40,10 @@ class NodeUpdate(BaseModel):
     parent_id: Optional[str] = None
     meta_data: Optional[Dict[str, Any]] = None
 
+class NodeTopologyCorrection(BaseModel):
+    new_parent_id: str
+    effective_date: datetime.date
+
 # --- Commodities ---
 @router.get("/commodities", response_model=List[Dict[str, Any]])
 async def list_commodities(
@@ -182,3 +186,62 @@ async def update_node(
         
     await db.commit()
     return {"message": "Node updated. Split created: " + str(requires_history_split)}
+
+@router.post("/nodes/{node_id}/topology-correction")
+async def historical_topology_correction(
+    node_id: str,
+    payload: NodeTopologyCorrection,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    SCD Type 2 Historical Rewrite: 
+    Finds the active record at the `effective_date`, caps its `valid_to`, 
+    and inserts a new record with the new `parent_id` spanning `effective_date` 
+    to the original `valid_to` (which could be NULL or a bounded date if another split exists).
+    """
+    actor.require_role("system_admin")
+    
+    from sqlalchemy import and_, or_
+    
+    # Find the specific row that was "active" on the effective date
+    stmt = select(NodeRegistry).where(
+        NodeRegistry.uid == node_id,
+        NodeRegistry.valid_from <= payload.effective_date,
+        or_(
+            NodeRegistry.valid_to == None,
+            NodeRegistry.valid_to > payload.effective_date
+        )
+    )
+    historical_node = (await db.execute(stmt)).scalars().first()
+    
+    if not historical_node:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot apply correction: No registry record active on {payload.effective_date}"
+        )
+        
+    if historical_node.parent_id == payload.new_parent_id:
+        return {"message": "No correction needed. Parent matches."}
+        
+    original_valid_to = historical_node.valid_to
+    
+    # Cap the historical record
+    historical_node.valid_to = payload.effective_date
+    
+    # Insert the new "middle" or "current" record
+    corrected_node = NodeRegistry(
+        uid=historical_node.uid,
+        code=historical_node.code,
+        name=historical_node.name,
+        node_type=historical_node.node_type,
+        parent_id=payload.new_parent_id,
+        meta_data=historical_node.meta_data,
+        valid_from=payload.effective_date,
+        valid_to=original_valid_to # If it was active, this is None. If it was already split, this preserves the cap.
+    )
+    
+    db.add(corrected_node)
+    await db.commit()
+    
+    return {"message": "Historical topology corrected"}

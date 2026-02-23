@@ -48,6 +48,8 @@ async def submit_ledger_command(
             result = await InTransitService.process_dispatch(db, command, dest_node_id=command.metadata.get("dest_node_id", "UNKNOWN"))
         elif command.transaction_type == TransactionType.RECEIPT and command.transfer_id:
             result = await InTransitService.process_receipt(db, command, command.transfer_id)
+        elif command.transaction_type == TransactionType.LOSS_IN_TRANSIT and command.transfer_id:
+            result = await InTransitService.process_loss(db, command, command.transfer_id)
         else:
             result = await EventStoreService.commit_command(db, command)
             

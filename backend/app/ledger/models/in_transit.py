@@ -11,6 +11,7 @@ class InTransitStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
     STALE_AUTO_CLOSED = "STALE_AUTO_CLOSED"
     FAILED_AUTO_CLOSE = "FAILED_AUTO_CLOSE"
+    LOST = "LOST"
 
 class InTransitRegistry(Base):
     """

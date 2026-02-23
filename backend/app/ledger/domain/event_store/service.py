@@ -60,7 +60,7 @@ class EventStoreService:
                 elif command.transaction_type in [TransactionType.RECEIPT]:
                     # These add stock
                     delta = abs(command.quantity)
-                elif command.transaction_type in [TransactionType.ADJUSTMENT, TransactionType.REVERSAL]:
+                elif command.transaction_type in [TransactionType.ADJUSTMENT, TransactionType.REVERSAL, TransactionType.LOSS_IN_TRANSIT]:
                     # The payload provided exactly what to add/subtract (can be positive or negative)
                     delta = command.quantity
                 

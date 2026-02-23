@@ -136,3 +136,37 @@ class InTransitService:
                 session.add(dlq_entry)
                 
         return count
+
+    @staticmethod
+    async def process_loss(session: AsyncSession, command: LedgerCommand, transfer_id: str) -> InTransitRegistry:
+        """
+        Step 4: The Write-Off.
+        Resolves a physically lost shipment. Marks the Area D record as LOST to prevent auto-receipt cron.
+        Writes a $0-value accountability event to Area C for the source node, avoiding double-deduction.
+        """
+        if command.transaction_type != TransactionType.LOSS_IN_TRANSIT:
+             raise ValueError(f"Loss requires TransactionType.LOSS_IN_TRANSIT, got {command.transaction_type}")
+             
+        try:
+            transfer_uuid = uuid.UUID(transfer_id)
+        except ValueError:
+            raise ValueError(f"Invalid transfer_id format: {transfer_id}")
+            
+        stmt = select(InTransitRegistry).where(InTransitRegistry.transfer_id == transfer_uuid).with_for_update()
+        result = await session.execute(stmt)
+        registry = result.scalars().first()
+        
+        if not registry:
+            raise ValueError(f"No open transfer found with ID {transfer_id}")
+            
+        if registry.status not in [InTransitStatus.OPEN, InTransitStatus.PARTIAL]:
+            raise ValueError(f"Transfer {transfer_id} is already in state {registry.status}, cannot write off.")
+            
+        # Write accountability audit event (Delta = 0 to avoid double accounting since Dispatch already deducted)
+        command.quantity = 0 
+        await EventStoreService.commit_command(session, command)
+        
+        # Update Tracking Record
+        registry.status = InTransitStatus.LOST
+        
+        return registry

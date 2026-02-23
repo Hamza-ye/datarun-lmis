@@ -10,6 +10,7 @@ class TransactionType(str, Enum):
     ADJUSTMENT = "ADJUSTMENT"
     STOCK_COUNT = "STOCK_COUNT"
     REVERSAL = "REVERSAL"
+    LOSS_IN_TRANSIT = "LOSS_IN_TRANSIT"
 
 class LedgerCommand(BaseModel):
     source_event_id: str = Field(..., description="The unique ID from the source (e.g., ODK InstanceID).")

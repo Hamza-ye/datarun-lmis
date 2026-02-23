@@ -141,3 +141,38 @@ async def test_internal_dlq_on_auto_close_error(db_session, seeded_warehouse, mo
     assert dlq_entry is not None
     assert dlq_entry.reference_id == str(registry.transfer_id)
     assert "Simulated Area C Rejection" in dlq_entry.error_message
+
+@pytest.mark.asyncio
+async def test_loss_in_transit(db_session, seeded_warehouse):
+    """Simulates a shipment being lost in transit and written off by a supervisor."""
+    
+    # 1. Dispatch 50
+    dispatch_cmd = base_command(TransactionType.TRANSFER, 50, "DISP_LOSS_1")
+    dispatch_cmd.node_id = "WAREHOUSE"
+    registry = await InTransitService.process_dispatch(db_session, dispatch_cmd, "CLINIC_1")
+    await db_session.commit()
+    
+    warehouse_bal_before = (await db_session.execute(select(StockBalance).where(StockBalance.node_id == "WAREHOUSE"))).scalars().first()
+    assert warehouse_bal_before.quantity == 50 # 100 - 50 = 50
+    
+    # 2. Loss Event 
+    loss_cmd = base_command(TransactionType.LOSS_IN_TRANSIT, 50, "LOSS_EVENT_1")
+    loss_cmd.node_id = "WAREHOUSE" # Accountability is tied to the source
+    
+    registry_updated = await InTransitService.process_loss(db_session, loss_cmd, str(registry.transfer_id))
+    await db_session.commit()
+    
+    # 3. Verify Registry is LOST
+    assert registry_updated.status == InTransitStatus.LOST
+    
+    # 4. Verify Balance did NOT double-deduct
+    warehouse_bal_after = (await db_session.execute(select(StockBalance).where(StockBalance.node_id == "WAREHOUSE"))).scalars().first()
+    assert warehouse_bal_after.quantity == 50 # Still 50!
+    
+    # 5. Verify the Audit Event was created with 0 quantity
+    stmt = select(InventoryEvent).where(InventoryEvent.source_event_id == "LOSS_EVENT_1")
+    loss_audit_event = (await db_session.execute(stmt)).scalars().first()
+    
+    assert loss_audit_event is not None
+    assert loss_audit_event.quantity == 0
+    assert loss_audit_event.transaction_type == TransactionType.LOSS_IN_TRANSIT
