@@ -18,6 +18,7 @@ class LedgerCommand(BaseModel):
     node_id: str = Field(..., description="Internal ID of the facility or MU")
     item_id: str = Field(..., description="Internal ID of the commodity (Shared Kernel)")
     quantity: int = Field(..., description="The delta. Always in Base Units.")
+    transfer_id: Optional[str] = Field(None, description="Links a receipt to a specific dispatch.")
     batch_id: Optional[str] = Field(None, description="For tracking specific lots/batches.")
     expiry_date: Optional[datetime] = Field(None, description="Essential for FEFO logic.")
     occurred_at: datetime = Field(..., description="The 'Business Time' (when it happened in the field).")
