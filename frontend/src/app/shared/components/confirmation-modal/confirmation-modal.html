@@ -1,0 +1,51 @@
+<h2 mat-dialog-title class="dialog-title">
+    <mat-icon color="warn" class="warning-icon">warning_amber</mat-icon>
+    {{ data.title }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
+    <!-- Summary Text -->
+    <p class="summary-text">{{ data.summaryText }}</p>
+
+    <!-- Payload Preview Box -->
+    <div class="payload-preview" *ngIf="data.mappedPayload">
+        <h4>Mapped Payload Preview</h4>
+        <pre>{{ data.mappedPayload | json }}</pre>
+    </div>
+
+    <!-- Idempotency Configuration -->
+    <div class="idempotency-box">
+        <h4>Idempotency Key (Source Event ID)</h4>
+        <p class="helper-text">This unique GUID ensures that accidental double-submissions will not create duplicate
+            ledger records.</p>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <input matInput [(ngModel)]="localIdempotencyKey" readonly>
+            <button mat-icon-button matSuffix (click)="regenerateKey()" matTooltip="Regenerate Key">
+                <mat-icon>refresh</mat-icon>
+            </button>
+        </mat-form-field>
+    </div>
+
+    <!-- Affirmation View -->
+    <div class="rbac-affirmation" *ngIf="data.requireRbacAffirmation">
+        <mat-checkbox [(ngModel)]="userConfirmed" color="primary">
+            <strong>I confirm this action conforms to NMCL reporting policies and that I hold the required role
+                authorizations.</strong>
+        </mat-checkbox>
+    </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()">Cancel</button>
+
+    <button mat-stroked-button color="accent" *ngIf="data.dryRunSupported" (click)="onDryRun()">
+        <mat-icon>science</mat-icon> Dry-Run Validate
+    </button>
+
+    <button mat-raised-button color="warn" [disabled]="data.requireRbacAffirmation && !userConfirmed"
+        (click)="onLiveSubmit()">
+        Confirm & Mutate Ledger
+    </button>
+</mat-dialog-actions>
