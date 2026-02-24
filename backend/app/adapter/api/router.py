@@ -9,10 +9,11 @@ from core.database import get_db
 router = APIRouter(prefix="/api/adapter", tags=["Adapter"])
 
 class ExternalPayload(BaseModel):
-    source_system: str
+    source_system: str | None = None
     mapping_profile: str
     source_event_id: str | None = None
-    data: Dict[str, Any]
+    dry_run: bool = False
+    payload: Dict[str, Any]
 
 @router.post("/inbox", status_code=status.HTTP_202_ACCEPTED)
 async def receive_external_payload(
@@ -26,11 +27,16 @@ async def receive_external_payload(
     Because this is an asynchronous messaging pattern, we return 202 Accepted immediately 
     and let the Adapter Worker chew through the payload in the background.
     """
-    actor.require_role("external_system")
+    from fastapi import HTTPException
+    
+    if "external_system" not in actor.roles and "system_admin" not in actor.roles:
+        raise HTTPException(status_code=403, detail="Actor lacks required role: external_system or system_admin")
     
     from sqlalchemy.future import select
     from fastapi import HTTPException
     from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
+    from app.adapter.schemas.dsl import MappingContractDSL
+    from app.adapter.engine.mapper import MapperEngine
     
     # Route matching: resolve active contract
     stmt = select(MappingContract).where(
@@ -42,13 +48,23 @@ async def receive_external_payload(
     if not contract:
         raise HTTPException(status_code=400, detail=f"No active mapping contract found for profile '{payload.mapping_profile}'")
     
-    # Store in raw inbox 
+    if payload.dry_run:
+        # Instantly resolve and map payload for preview without saving to DB
+        dsl = MappingContractDSL(**contract.dsl_config)
+        commands = await MapperEngine.run(db_session, payload.payload, contract=dsl)
+        return {
+            "message": "Dry-run successful", 
+            "dry_run": True, 
+            "mapped_payloads": commands
+        }
+    
+    # Live Mutation: Store in raw inbox 
     inbox_record = AdapterInbox(
-        source_system=payload.source_system,
+        source_system=payload.source_system or "unknown",
         mapping_id=contract.id,
         mapping_version=contract.version,
         source_event_id=payload.source_event_id,
-        payload=payload.data,
+        payload=payload.payload,
         status=InboxStatus.RECEIVED
     )
     db_session.add(inbox_record)

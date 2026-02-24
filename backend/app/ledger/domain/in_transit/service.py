@@ -135,6 +135,7 @@ class InTransitService:
                 )
                 session.add(dlq_entry)
                 
+        await session.commit()
         return count
 
     @staticmethod

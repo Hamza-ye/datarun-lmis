@@ -1,5 +1,6 @@
 import asyncio
 import httpx
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -8,6 +9,8 @@ from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
 from app.adapter.schemas.dsl import MappingContractDSL
 from app.adapter.engine.mapper import MapperEngine
 
+logger = logging.getLogger(__name__)
+
 class AdapterWorker:
     """
     Background asynchronous loop that fetches RECEIVED payloads from the inbox, 
@@ -15,6 +18,23 @@ class AdapterWorker:
     the result to the configured Ledger endpoint.
     """
     
+    @staticmethod
+    async def reclaim_zombies(session: AsyncSession, stale_minutes: int = 15):
+        """Reclaims inbox rows that were stuck in PROCESSING state due to worker crashes."""
+        import datetime
+        from sqlalchemy import update
+        now = datetime.datetime.now(datetime.timezone.utc)
+        threshold = now - datetime.timedelta(minutes=stale_minutes)
+        
+        stmt = update(AdapterInbox).where(
+            AdapterInbox.status == InboxStatus.PROCESSING,
+            AdapterInbox.updated_at < threshold
+        ).values(status=InboxStatus.RECEIVED)
+        
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount
+
     @staticmethod
     async def process_batch(batch_size: int = 50, session: AsyncSession = None):
         if session:
@@ -131,21 +151,30 @@ class AdapterWorker:
                 item.status = InboxStatus.ERROR
             await session.commit()
         except Exception as e:
-            print(f"WORKER ERROR: {e}")
+            logger.error(f"WORKER ERROR: {e}")
             item.status = InboxStatus.ERROR
             await session.commit()
             
     @staticmethod
     async def run_loop(interval_seconds: int = 5):
         """Infinite loop designed to run alongside FastAPI"""
+        import time
+        last_reclaim = 0
         try:
             while True:
                 try:
+                    if time.time() - last_reclaim > 300: # Every 5 mins
+                        async with async_session_maker() as session:
+                            zombies = await AdapterWorker.reclaim_zombies(session)
+                            if zombies > 0:
+                                logger.warning(f"Reclaimed {zombies} zombie payloads")
+                        last_reclaim = time.time()
+                        
                     processed = await AdapterWorker.process_batch()
                     if processed == 0:
                         await asyncio.sleep(interval_seconds)
                 except Exception as e:
-                    print(f"Adapter Worker Loop Error: {e}")
+                    logger.error(f"Adapter Worker Loop Error: {e}")
                     await asyncio.sleep(interval_seconds)
         except asyncio.CancelledError:
             # Re-raise to let the external caller (FastAPI lifespan) handle the clean exit

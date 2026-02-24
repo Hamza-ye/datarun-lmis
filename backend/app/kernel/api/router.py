@@ -44,6 +44,9 @@ class NodeTopologyCorrection(BaseModel):
     new_parent_id: str
     effective_date: datetime.date
 
+class NodeResolveRequest(BaseModel):
+    node_ids: List[str]
+
 # --- Commodities ---
 @router.get("/commodities", response_model=List[Dict[str, Any]])
 async def list_commodities(
@@ -104,6 +107,85 @@ async def create_or_update_policy(
     return {"message": "Policy mapped"}
 
 # --- Nodes (SCD Type 2) ---
+@router.get("/nodes", response_model=List[Dict[str, Any]])
+async def list_nodes(
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    actor.require_role("system_admin")
+    stmt = select(NodeRegistry).where(NodeRegistry.valid_to == None)
+    result = await db.execute(stmt)
+    nodes = result.scalars().all()
+    return [{
+        "node_id": n.uid,
+        "code": n.code,
+        "name": n.name,
+        "node_type": n.node_type,
+        "parent_id": n.parent_id,
+        "meta_data": n.meta_data,
+        "valid_from": n.valid_from,
+        "valid_to": n.valid_to
+    } for n in nodes]
+
+@router.post("/nodes/resolve", response_model=Dict[str, str])
+async def resolve_nodes(
+    payload: NodeResolveRequest,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Efficiently resolves a list of Node UUIDs to their human-readable names.
+    Ignores historical topology splits, just gets the name of the active record
+    (or the latest record if deactivated).
+    """
+    if "system_admin" not in actor.roles and "ledger_supervisor" not in actor.roles:
+        # A read-only basic check context (or allow all authenticated)
+        pass 
+        
+    if not payload.node_ids:
+        return {}
+        
+    unique_ids = list(set(payload.node_ids))
+    
+    stmt = select(NodeRegistry.uid, NodeRegistry.name).where(
+        NodeRegistry.uid.in_(unique_ids),
+        NodeRegistry.valid_to == None
+    )
+    result = await db.execute(stmt)
+    resolved = {row.uid: row.name for row in result.all()}
+    
+    missing = set(unique_ids) - set(resolved.keys())
+    if missing:
+        stmt2 = select(NodeRegistry.uid, NodeRegistry.name).where(
+            NodeRegistry.uid.in_(list(missing))
+        )
+        result2 = await db.execute(stmt2)
+        for row in result2.all():
+            if row.uid not in resolved:
+                resolved[row.uid] = row.name
+                
+    return resolved
+
+@router.get("/nodes/all", response_model=List[Dict[str, Any]])
+async def list_all_nodes_historical(
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    actor.require_role("system_admin")
+    stmt = select(NodeRegistry)
+    result = await db.execute(stmt)
+    nodes = result.scalars().all()
+    return [{
+        "node_id": n.uid,
+        "code": n.code,
+        "name": n.name,
+        "node_type": n.node_type,
+        "parent_id": n.parent_id,
+        "meta_data": n.meta_data,
+        "valid_from": n.valid_from,
+        "valid_to": n.valid_to
+    } for n in nodes]
+
 @router.post("/nodes", status_code=status.HTTP_201_CREATED)
 async def create_node(
     payload: NodeCreate,

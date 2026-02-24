@@ -4,8 +4,11 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 from core.database import engine, Base
-import contextvars
+from core.logger import setup_logging, correlation_id_ctx
 import uuid
+
+# Initialize structured logging globally
+setup_logging()
 
 from app.adapter.api.router import router as adapter_router
 from app.adapter.api.admin import router as adapter_admin_router
@@ -40,7 +43,6 @@ app = FastAPI(
 )
 
 # --- Observability (Correlation IDs) ---
-correlation_id_ctx = contextvars.ContextVar("correlation_id", default=None)
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
