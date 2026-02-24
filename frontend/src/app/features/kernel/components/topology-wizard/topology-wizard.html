@@ -1,0 +1,53 @@
+<div class="lmis-card">
+    <h2>Topology Correction Previews</h2>
+    <p class="subtitle">Simulate shifting a node to a new parent in the organizational hierarchy.</p>
+
+    <form (ngSubmit)="previewCorrection()" #topologyForm="ngForm" class="inbox-form">
+
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Target Node ID</mat-label>
+                <input matInput [(ngModel)]="correction.nodeId" name="nodeId" placeholder="e.g. CLINIC_1" required>
+                <mat-hint>The node that is changing parents.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>New Parent ID</mat-label>
+                <input matInput [(ngModel)]="correction.payload.new_parent_id" name="new_parent_id"
+                    placeholder="e.g. NEW_DISTRICT_B" required>
+            </mat-form-field>
+        </div>
+
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Effective Date</mat-label>
+                <input matInput [(ngModel)]="correction.payload.effective_date" name="effective_date" type="date"
+                    required>
+                <mat-hint>Retroactive date triggering SCD Type 2 splits (YYYY-MM-DD).</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="actions-row">
+            <!-- In a real app we'd trigger a DRY RUN flag on the backend Endpoint here. 
+           For MVP, the existing endpoint mutates, so we simulate the UI flow. -->
+            <button mat-raised-button color="primary" type="submit"
+                [disabled]="!topologyForm.form.valid || isSubmitting">
+                {{ isSubmitting ? 'Simulating...' : 'Preview Topology Split' }}
+            </button>
+        </div>
+    </form>
+
+    <!-- Result Output -->
+    <div class="result-panel" *ngIf="result"
+        [ngClass]="{'success': result.status === 'success', 'error': result.status === 'error'}">
+        <div class="result-header">
+            <mat-icon>{{ result.status === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+            <h3>{{ result.status === 'success' ? 'Split Successful' : 'Correction Failed' }}</h3>
+        </div>
+        <div class="result-body">
+            <p *ngIf="result.correlation_id"><strong>Correlation ID:</strong> <span class="mono">{{
+                    result.correlation_id }}</span></p>
+            <pre>{{ result.details | json }}</pre>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,40 @@
+.table-actions {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+
+    .filter-field {
+        width: 300px;
+    }
+}
+
+.table-container {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.qty-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+
+    &.low {
+        background-color: #fff3e0;
+        color: #ef6c00;
+    }
+
+    &.negative {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+}
+
+.empty-state {
+    padding: 32px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}

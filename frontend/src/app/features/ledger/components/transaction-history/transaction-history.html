@@ -1,0 +1,80 @@
+<div class="lmis-card">
+    <h2>Transaction History Audit</h2>
+
+    <div class="table-actions">
+        <!-- Search Inputs for Node/Item -->
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Node ID</mat-label>
+            <input matInput [(ngModel)]="searchNodeId" placeholder="E.g. DIST_1">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Item ID</mat-label>
+            <input matInput [(ngModel)]="searchItemId" placeholder="E.g. AL_6x3">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" [disabled]="!searchNodeId || !searchItemId"
+            (click)="refreshHistory()">Fetch History</button>
+    </div>
+
+    <div class="table-container mat-elevation-z2" *ngIf="dataSource.data.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort>
+
+            <!-- Source Event ID / Idempotency Key -->
+            <ng-container matColumnDef="source_event_id">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Event ID </th>
+                <td mat-cell *matCellDef="let element" class="id-col"> {{element.source_event_id}} </td>
+            </ng-container>
+
+            <!-- Transaction Type -->
+            <ng-container matColumnDef="transaction_type">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Type </th>
+                <td mat-cell *matCellDef="let element">
+                    <span class="type-badge" [ngClass]="element.transaction_type.toLowerCase()">
+                        {{element.transaction_type}}
+                    </span>
+                </td>
+            </ng-container>
+
+            <!-- Quantity Delta -->
+            <ng-container matColumnDef="quantity">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Qty Delta </th>
+                <td mat-cell *matCellDef="let element">
+                    <span [class.positive]="element.quantity > 0" [class.negative]="element.quantity < 0">
+                        {{element.quantity > 0 ? '+' : ''}}{{element.quantity}}
+                    </span>
+                </td>
+            </ng-container>
+
+            <!-- Running Balance -->
+            <ng-container matColumnDef="running_balance">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Balance </th>
+                <td mat-cell *matCellDef="let element"> {{element.running_balance}} </td>
+            </ng-container>
+
+            <!-- Occurred At Column -->
+            <ng-container matColumnDef="occurred_at">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Source Timestamp </th>
+                <td mat-cell *matCellDef="let element"> {{element.occurred_at | date:'medium'}} </td>
+            </ng-container>
+
+            <!-- Created At Column -->
+            <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Processed At </th>
+                <td mat-cell *matCellDef="let element" class="muted-col"> {{element.created_at | date:'short'}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="lmis-row"></tr>
+        </table>
+    </div>
+
+    <mat-paginator *ngIf="dataSource.data.length > 0" [pageSizeOptions]="[20, 50, 100]"
+        aria-label="Select history page"></mat-paginator>
+
+    <!-- Empty State before search -->
+    <div class="empty-selection" *ngIf="dataSource.data.length === 0">
+        <mat-icon>manage_search</mat-icon>
+        <p>Enter a Node ID and Item ID to view full transaction lineage.</p>
+    </div>
+</div>

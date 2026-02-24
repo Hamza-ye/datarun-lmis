@@ -1,0 +1,35 @@
+.table-actions {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+
+    .filter-field {
+        width: 300px;
+    }
+}
+
+.table-container {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.id-col {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.muted-col {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.type-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: #ede7f6;
+    color: #4527a0;
+}

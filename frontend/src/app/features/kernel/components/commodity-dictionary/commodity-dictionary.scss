@@ -1,0 +1,46 @@
+.table-actions {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+
+    .filter-field {
+        width: 300px;
+    }
+}
+
+.table-container {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.muted-col {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.unit-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+
+    &.active {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    &.deprecated {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+}

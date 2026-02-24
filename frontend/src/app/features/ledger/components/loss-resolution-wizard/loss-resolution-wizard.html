@@ -1,0 +1,51 @@
+<div class="lmis-card">
+    <h2>Transfer Resolution (Loss in Transit)</h2>
+    <p class="subtitle">Force close a stuck transfer by appending a 0-quantity accountability event against the Ledger.
+    </p>
+
+    <form (ngSubmit)="simulateResolution()" #lossForm="ngForm" class="inbox-form">
+
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Stuck Transfer ID</mat-label>
+                <input matInput [(ngModel)]="resolution.transfer_id" name="transfer_id" placeholder="e.g. TR-999"
+                    required>
+                <mat-hint>The Originating Dispatch Event ID</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Item ID / Commodity</mat-label>
+                <input matInput [(ngModel)]="resolution.item_id" name="item_id" placeholder="e.g. AL_6x3" required>
+            </mat-form-field>
+        </div>
+
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Target Node (Intended Destination)</mat-label>
+                <input matInput [(ngModel)]="resolution.node_id" name="node_id" placeholder="e.g. CLINIC_1" required>
+                <mat-hint>The node that was supposed to receive the stock.</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="actions-row">
+            <!-- Simulated Action -->
+            <button mat-raised-button color="warn" type="submit" [disabled]="!lossForm.form.valid || isSubmitting">
+                <mat-icon>warning</mat-icon>
+                {{ isSubmitting ? 'Simulating...' : 'Preview Resolution Command' }}
+            </button>
+        </div>
+    </form>
+
+    <!-- Result Output -->
+    <div class="result-panel highlight" *ngIf="result">
+        <div class="result-header">
+            <mat-icon>science</mat-icon>
+            <h3>Dry-Run Payload Generated</h3>
+        </div>
+        <div class="result-body">
+            <p>This payload would be submitted to <code>POST /api/ledger/commands</code> to reconcile the stuck
+                transfer.</p>
+            <pre>{{ result.details | json }}</pre>
+        </div>
+    </div>
+</div>

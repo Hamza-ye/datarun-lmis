@@ -1,0 +1,68 @@
+<div class="lmis-card">
+    <h2>Adapter Inbox Simulator</h2>
+    <p class="subtitle">Submit JSON payloads to the Adapter Mapping Engine. Use <strong>Dry-Run</strong> to validate
+        mappings without mutating the Ledger.</p>
+
+    <form (ngSubmit)="submitPayload()" #inboxForm="ngForm" class="inbox-form">
+
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Mapping Profile</mat-label>
+                <mat-select [(ngModel)]="payload.mapping_profile" name="mapping_profile" required>
+                    <mat-option value="hf_receipt_902">hf_receipt_902 (Receipt)</mat-option>
+                    <mat-option value="hf_issue_903">hf_issue_903 (Issue)</mat-option>
+                    <mat-option value="dhis2_consumption_api">dhis2_consumption_api</mat-option>
+                </mat-select>
+                <mat-hint>The mapping schema version to execute against the payload.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="flex-grow">
+                <mat-label>Source System</mat-label>
+                <input matInput [(ngModel)]="payload.source_system" name="source_system" placeholder="e.g. legacy_excel"
+                    required>
+            </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Idempotency Key (Source Event ID)</mat-label>
+            <input matInput [(ngModel)]="payload.source_event_id" name="source_event_id"
+                placeholder="Provide a unique GUID for deduplication" required>
+            <mat-hint>Prevents duplicate processing. Required by Ledger Area B constraints.</mat-hint>
+            <button mat-icon-button matSuffix type="button" (click)="generateId()" matTooltip="Generate Random GUID">
+                <mat-icon>refresh</mat-icon>
+            </button>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width code-editor">
+            <mat-label>JSON Payload</mat-label>
+            <textarea matInput [(ngModel)]="rawJsonInput" name="rawJsonInput" rows="12" class="mono"
+                required></textarea>
+            <mat-error *ngIf="jsonError">Invalid JSON string.</mat-error>
+        </mat-form-field>
+
+        <div class="actions-row">
+            <mat-slide-toggle [(ngModel)]="payload.dry_run" name="dry_run" color="primary">
+                Dry-Run Mode (Rollback after validation)
+            </mat-slide-toggle>
+
+            <button mat-raised-button color="primary" type="submit"
+                [disabled]="!inboxForm.form.valid || jsonError || isSubmitting">
+                {{ isSubmitting ? 'Processing...' : 'Submit to Engine' }}
+            </button>
+        </div>
+    </form>
+
+    <!-- Result Output -->
+    <div class="result-panel" *ngIf="result"
+        [ngClass]="{'success': result.status === 'success', 'error': result.status === 'error'}">
+        <div class="result-header">
+            <mat-icon>{{ result.status === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+            <h3>{{ result.status === 'success' ? 'Execution Successful' : 'Execution Failed' }}</h3>
+        </div>
+        <div class="result-body">
+            <p *ngIf="result.correlation_id"><strong>Correlation ID:</strong> <span class="mono">{{
+                    result.correlation_id }}</span></p>
+            <pre>{{ result.details | json }}</pre>
+        </div>
+    </div>
+</div>

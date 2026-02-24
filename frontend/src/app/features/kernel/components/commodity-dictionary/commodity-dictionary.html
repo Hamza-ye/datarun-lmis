@@ -1,0 +1,52 @@
+<div class="lmis-card">
+    <h2>Commodity Dictionary</h2>
+
+    <div class="table-actions">
+        <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Search Commodities</mat-label>
+            <input matInput (keyup)="applyFilter($event)" placeholder="E.g. Malaria" #input>
+            <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+    </div>
+
+    <div class="table-container mat-elevation-z2">
+        <table mat-table [dataSource]="dataSource" matSort>
+
+            <!-- ID/Code Column -->
+            <ng-container matColumnDef="item_id">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Item ID </th>
+                <td mat-cell *matCellDef="let element">
+                    <strong>{{element.item_id}}</strong>
+                    <div class="muted-col">{{element.code}}</div>
+                </td>
+            </ng-container>
+
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Description </th>
+                <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+            </ng-container>
+
+            <!-- Unit Column -->
+            <ng-container matColumnDef="base_unit">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Base Unit </th>
+                <td mat-cell *matCellDef="let element">
+                    <span class="unit-badge">{{element.base_unit}}</span>
+                </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Status </th>
+                <td mat-cell *matCellDef="let element">
+                    <span class="status-badge" [ngClass]="element.status.toLowerCase()">{{element.status}}</span>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="lmis-row"></tr>
+        </table>
+    </div>
+
+    <mat-paginator [pageSizeOptions]="[10, 25, 100]" aria-label="Select page of commodities"></mat-paginator>
+</div>

@@ -1,0 +1,77 @@
+<mat-sidenav-container class="sidenav-container">
+    <!-- Side Navigation -->
+    <mat-sidenav mode="side" opened class="sidenav">
+        <div class="sidenav-header">
+            <mat-icon>local_shipping</mat-icon>
+            <h2>NMCL</h2>
+        </div>
+
+        <mat-nav-list>
+            <div mat-subheader>Ledger (Read-Only)</div>
+
+            <a mat-list-item routerLink="/ledger/balances" routerLinkActive="active-link">
+                <mat-icon matListItemIcon>inventory</mat-icon>
+                <div matListItemTitle>Stock Balances</div>
+            </a>
+
+            <a mat-list-item routerLink="/ledger/history" routerLinkActive="active-link">
+                <mat-icon matListItemIcon>history</mat-icon>
+                <div matListItemTitle>Audit History</div>
+            </a>
+
+            <div mat-subheader>Kernel Registry</div>
+
+            <a mat-list-item routerLink="/kernel/nodes" routerLinkActive="active-link">
+                <mat-icon matListItemIcon>account_tree</mat-icon>
+                <div matListItemTitle>Node Hierarchy</div>
+            </a>
+
+            <a mat-list-item routerLink="/kernel/commodities" routerLinkActive="active-link">
+                <mat-icon matListItemIcon>category</mat-icon>
+                <div matListItemTitle>Commodity Dictionary</div>
+            </a>
+
+            <!-- Future Features Placeholder -->
+            <div *ngIf="(actor$ | async) as actor">
+                <div mat-subheader *ngIf="actor.roles.includes('system_admin')">Admin Functions</div>
+
+                <a mat-list-item routerLink="/adapter/inbox" routerLinkActive="active-link"
+                    *ngIf="actor.roles.includes('system_admin')">
+                    <mat-icon matListItemIcon>move_to_inbox</mat-icon>
+                    <div matListItemTitle>Adapter Inbox Simulator</div>
+                </a>
+
+                <a mat-list-item routerLink="/kernel/topology" routerLinkActive="active-link"
+                    *ngIf="actor.roles.includes('system_admin')">
+                    <mat-icon matListItemIcon>device_hub</mat-icon>
+                    <div matListItemTitle>Topology Corrections</div>
+                </a>
+
+                <a mat-list-item routerLink="/ledger/loss-resolution" routerLinkActive="active-link"
+                    *ngIf="actor.roles.includes('system_admin') || actor.roles.includes('ledger_supervisor')">
+                    <mat-icon matListItemIcon>warning</mat-icon>
+                    <div matListItemTitle>Loss Resolution</div>
+                </a>
+            </div>
+        </mat-nav-list>
+    </mat-sidenav>
+
+    <!-- Main Content Area -->
+    <mat-sidenav-content>
+        <!-- Top Toolbar -->
+        <mat-toolbar color="primary">
+            <span>Malaria Commodity Ledger</span>
+            <span class="spacer"></span>
+            <div class="user-badge" *ngIf="(actor$ | async) as actor">
+                <mat-icon>account_circle</mat-icon>
+                <span class="user-id">{{ actor.actor_id }}</span>
+                <span class="role-badge" *ngFor="let role of actor.roles">{{ role }}</span>
+            </div>
+        </mat-toolbar>
+
+        <!-- Page Content -->
+        <div class="content-wrapper">
+            <router-outlet></router-outlet>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>
