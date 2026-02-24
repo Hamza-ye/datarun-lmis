@@ -42,7 +42,7 @@ async def test_adapter_inbox_requires_external_role(async_client: AsyncClient, d
     payload = {
         "source_system": "DHIS2",
         "mapping_profile": "DHIS2_V1",
-        "data": {"foo": "bar"}
+        "payload": {"foo": "bar"}
     }
     
     # 403 Forbidden with Wrong Role

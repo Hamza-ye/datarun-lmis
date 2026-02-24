@@ -107,3 +107,32 @@ async def test_occ_concurrent_collision_recovery(db_session, monkeypatch):
     assert final_balance.quantity == 50
     assert final_balance.version == 2
     assert event.running_balance == 50
+
+@pytest.mark.asyncio
+async def test_event_store_compensating_transaction_math(db_session):
+    """Verifies that REVERSAL events apply the compensating math."""
+    # 1. Start with 100 via RECEIPT
+    cmd1 = base_command(TransactionType.RECEIPT, 100, "ORIGINAL_RECEIPT")
+    await EventStoreService.commit_command(db_session, cmd1)
+    
+    # 2. Issue 40 (Stock -> 60)
+    cmd2 = base_command(TransactionType.ISSUE, 40, "ORIGINAL_ISSUE")
+    await EventStoreService.commit_command(db_session, cmd2)
+    
+    bal1 = (await db_session.execute(select(StockBalance))).scalars().first()
+    assert bal1.quantity == 60
+    
+    # 3. Reversal of the Issue (Client realized they only issued 10)
+    # The Idempotency Layer creates a REVERSAL for the full 40 (+40)
+    cmd_rev = base_command(TransactionType.REVERSAL, 40, "REVERSAL_ISSUE")
+    await EventStoreService.commit_command(db_session, cmd_rev)
+    
+    bal2 = (await db_session.execute(select(StockBalance))).scalars().first()
+    assert bal2.quantity == 100
+    
+    # 4. Correction (The new real value: Issue 10)
+    cmd_corr = base_command(TransactionType.ISSUE, 10, "CORRECTION_ISSUE")
+    await EventStoreService.commit_command(db_session, cmd_corr)
+    
+    bal3 = (await db_session.execute(select(StockBalance))).scalars().first()
+    assert bal3.quantity == 90

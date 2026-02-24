@@ -24,7 +24,8 @@ class DestinationConfig(BaseModel):
 
 class DictionaryConfig(BaseModel):
     namespace: str
-    on_unmapped: str = Field(..., description="E.g., DLQ, PASS_THROUGH, ERROR")
+    on_unmapped: str = Field(..., description="E.g., DLQ, PASS_THROUGH, ERROR, USE_DEFAULT")
+    default_value: Optional[str] = None
 
 class ExternalDictionaries(BaseModel):
     node_map: Optional[DictionaryConfig] = None

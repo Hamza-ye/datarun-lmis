@@ -103,7 +103,7 @@ class MapperEngine:
         Returns a tuple: (mapped_internal_id, metadata_json_dict, dict_name)
         """
         if not dict_reference.startswith("external:"):
-            return raw_value, None, None
+            return raw_value, {}, None
             
         dict_name = dict_reference.split(":")[1] # e.g. 'node_map' or 'item_map'
         dict_config = None
@@ -115,7 +115,7 @@ class MapperEngine:
             dict_config = contract.dictionaries.external.item_map
             
         if not dict_config:
-            return raw_value, None, dict_name
+            return raw_value, {}, dict_name
             
         stmt = select(AdapterCrosswalk).where(
             AdapterCrosswalk.namespace == dict_config.namespace,
@@ -130,10 +130,12 @@ class MapperEngine:
              
         # Unmapped behavior
         if dict_config.on_unmapped == "PASS_THROUGH":
-            return raw_value, None, dict_name
+            return raw_value, {}, dict_name
+        elif dict_config.on_unmapped == "USE_DEFAULT":
+            return dict_config.default_value, {}, dict_name
         elif dict_config.on_unmapped == "DLQ":
             raise ValueError(f"DLQ_TRIGGER: Unmapped value '{raw_value}' in namespace '{dict_config.namespace}'")
         elif dict_config.on_unmapped == "ERROR":
             raise Exception(f"Strict mapping failed for value '{raw_value}'")
             
-        return raw_value, None, dict_name
+        return raw_value, {}, dict_name

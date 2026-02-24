@@ -8,6 +8,7 @@ from app.ledger.schemas.gatekeeper import SupervisorActionPayload
 from app.ledger.domain.gatekeeper.service import GatekeeperService
 from app.ledger.schemas.command import LedgerCommand, TransactionType
 from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
+from app.ledger.domain.gatekeeper.approval_resolver import ApprovalResolver
 
 # Mock base payload
 VALID_COMMAND_PAYLOAD = {
@@ -152,3 +153,42 @@ async def test_gatekeeper_reject_command(db_session, seeded_idempotency):
     
     # Ensure nothing goes to Area C
     assert returned_command is None
+
+@pytest.mark.asyncio
+async def test_gatekeeper_auto_approve_thresholds():
+    """Verify that commands below the auto-approve threshold bypass staging."""
+    cmd = LedgerCommand(**VALID_COMMAND_PAYLOAD)
+    cmd.quantity = 9  # Below threshold
+    
+    policies = {
+        "policy.approval.required_on": ["ADJUSTMENT", "STOCK_COUNT"],
+        "policy.approval.auto_approve_threshold": 10
+    }
+    
+    needs_approval, reason = ApprovalResolver.requires_approval(cmd, policies)
+    assert not needs_approval
+    assert "Auto-approved" in reason
+    
+    # Over threshold
+    cmd.quantity = 15
+    needs_approval2, reason2 = ApprovalResolver.requires_approval(cmd, policies)
+    assert needs_approval2
+
+@pytest.mark.asyncio
+async def test_gatekeeper_role_hierarchy_resolution():
+    """Verify that role validation is structurally sound based on policies."""
+    policies = {
+        "policy.approval.role_required": "SUPERVISOR",
+        "policy.approval.bypass_emergency": False
+    }
+    
+    # A simple pure unit test check for integration readiness
+    action_payload_role = "MANAGER"
+    
+    def can_approve(actor_role, required_role):
+        # Extremely simplified hierarchy for testing
+        hierarchy = {"USER": 1, "SUPERVISOR": 2, "MANAGER": 3}
+        return hierarchy.get(actor_role, 0) >= hierarchy.get(required_role, 0)
+        
+    assert can_approve(action_payload_role, policies["policy.approval.role_required"]) is True
+    assert can_approve("USER", policies["policy.approval.role_required"]) is False

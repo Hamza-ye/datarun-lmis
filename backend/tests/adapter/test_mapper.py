@@ -155,3 +155,35 @@ async def test_dlq_trigger_on_unmapped(db_session):
         
     assert str(excinfo.value).startswith("DLQ_TRIGGER")
     assert "UNKNOWN_DRUG" in str(excinfo.value)
+
+@pytest.mark.asyncio
+async def test_mapper_dictionary_default_fallbacks(db_session):
+    """
+    If a source value is not in the crosswalk and the DSL dictates USE_DEFAULT,
+    it should fall back to the provided default_value instead of DLQ.
+    """
+    db_session.add(AdapterCrosswalk(
+        namespace="orgunit_to_node", source_value="WH_KAMPALA_01", internal_id="NK_01"
+    ))
+    await db_session.flush()
+
+    fallback_payload = json.loads(json.dumps(MOCK_PAYLOAD))
+    fallback_payload["formData"]["invoice"]["invoiceDetails"] = [
+        {"wh_category": "UNKNOWN_DRUG", "wh_quantity": "10"}
+    ]
+    
+    contract_dict = json.loads(json.dumps(MOCK_CONTRACT_DSL))
+    
+    # Modify the DSL dictionary config for testing
+    contract_dict["dictionaries"]["external"]["item_map"] = {
+        "namespace": "wh_category_to_item", 
+        "on_unmapped": "USE_DEFAULT",
+        "default_value": "DEFAULT_ITEM_01"
+    }
+
+    contract = MappingContractDSL(**contract_dict)
+    
+    results = await MapperEngine.run(db_session, fallback_payload, contract)
+    
+    assert len(results) == 1
+    assert results[0]["item_id"] == "DEFAULT_ITEM_01"
