@@ -1,0 +1,48 @@
+<div class="dlq-container">
+    <div class="header-actions">
+        <h2>Dead Letter Queue Administration</h2>
+        <button class="btn btn-primary" (click)="refreshQueue()">↻ Refresh</button>
+    </div>
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center">Loading queue state...</div>
+    } @else {
+    <table class="glass-table glass-panel">
+        <thead>
+            <tr>
+                <th>DLQ ID</th>
+                <th>Inbox Reference</th>
+                <th>Error Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (item of items(); track item.id) {
+            <tr>
+                <td class="font-mono text-sm">{{ item.id }}</td>
+                <td class="font-mono text-sm">{{ item.inbox_id }}</td>
+                <td class="text-danger">{{ item.error_reason }}</td>
+                <td>
+                    <span class="badge" [ngClass]="item.status === 'UNRESOLVED' ? 'badge-danger' : 'badge-warning'">
+                        {{ item.status }}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-glass" (click)="retryItem(item.id!)"
+                        [disabled]="item.status !== 'UNRESOLVED'">
+                        Retry Payload
+                    </button>
+                </td>
+            </tr>
+            } @empty {
+            <tr>
+                <td colspan="5" class="text-center text-muted py-8">
+                    The DLQ is completely empty. Excellent system health!
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>

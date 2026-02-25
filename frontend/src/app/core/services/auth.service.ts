@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, catchError, of } from 'rxjs';
+import { Observable, tap, catchError, of } from 'rxjs';
 import { ActorContext } from '../models/actor-context.dto';
 
 @Injectable({
@@ -9,9 +9,11 @@ import { ActorContext } from '../models/actor-context.dto';
 export class AuthService {
     private http = inject(HttpClient);
 
-    // We store the current actor context in a BehaviorSubject so components can react to changes
-    private currentActorSubject = new BehaviorSubject<ActorContext | null>(null);
-    public currentActor$ = this.currentActorSubject.asObservable();
+    // State Management: Native Angular 19+ Signal
+    private currentActorSignal = signal<ActorContext | null>(null);
+
+    // Read-only computed signal exposed to the UI
+    public currentActor = computed(() => this.currentActorSignal());
 
     // For MVP/Testing: we hardcode a mock token or read from localStorage
     private readonly TOKEN_KEY = 'lmis_token';
@@ -33,25 +35,26 @@ export class AuthService {
 
     clearToken(): void {
         localStorage.removeItem(this.TOKEN_KEY);
-        this.currentActorSubject.next(null);
+        this.currentActorSignal.set(null);
     }
 
     /**
      * Fetches the ActorContext from the backend based on the current JWT.
+     * Keeps RxJS purely for the HTTP stream, but updates the Signal.
      */
     loadContext(): Observable<ActorContext | null> {
         return this.http.get<ActorContext>('/api/auth/me').pipe(
-            tap(actor => this.currentActorSubject.next(actor)),
+            tap(actor => this.currentActorSignal.set(actor)),
             catchError(err => {
                 console.error('Failed to load auth context', err);
-                this.currentActorSubject.next(null);
+                this.currentActorSignal.set(null);
                 return of(null);
             })
         );
     }
 
     hasRole(role: string): boolean {
-        const actor = this.currentActorSubject.value;
+        const actor = this.currentActorSignal();
         return actor ? actor.roles.includes(role) : false;
     }
 }

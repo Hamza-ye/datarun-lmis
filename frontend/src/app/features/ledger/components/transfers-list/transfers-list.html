@@ -1,0 +1,78 @@
+<div class="transfers-container">
+    <div class="header-actions">
+        <h2>In-Transit Receipts Registry</h2>
+        <button class="btn btn-primary" (click)="refreshTransfers()">↻ Refresh</button>
+    </div>
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center">Loading pending transfers...</div>
+    } @else {
+    <table class="glass-table glass-panel">
+        <thead>
+            <tr>
+                <th>Transfer ID</th>
+                <th>Source Node</th>
+                <th>Destination Node</th>
+                <th>Item ID</th>
+                <th>Qty Shipped / Received</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (transfer of transfers(); track transfer.transfer_id) {
+            <tr>
+                <td class="font-mono text-sm">{{ transfer.transfer_id | slice:0:8 }}...</td>
+                <td>{{ transfer.source_node_id | nodeName }}</td>
+                <td>{{ transfer.dest_node_id | nodeName }}</td>
+                <td class="font-mono">{{ transfer.item_id }}</td>
+                <td>{{ transfer.qty_shipped }} / <strong class="text-success">{{ transfer.qty_received }}</strong></td>
+                <td>
+                    <span class="badge" [ngClass]="{
+                                'badge-warning': transfer.status === 'OPEN',
+                                'badge-success': transfer.status === 'COMPLETED',
+                                'badge-danger': transfer.status === 'LOST' || transfer.status === 'FAILED_AUTO_CLOSE'
+                            }">
+                        {{ transfer.status }}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-glass" (click)="selectTransfer(transfer)"
+                        [disabled]="transfer.status === 'COMPLETED'">
+                        Receive Form
+                    </button>
+                </td>
+            </tr>
+            } @empty {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-8">
+                    No active inbound or outbound transfers for your node(s).
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    <!-- Inline Receipt Form -->
+    @if (selectedTransfer(); as selected) {
+    <div class="glass-panel review-panel mt-4">
+        <h3>Acknowledge Receipt</h3>
+        <p class="text-muted text-sm mt-2">
+            Registering receipt of <strong>{{ selected.item_id }}</strong> arriving from <strong>{{
+                selected.source_node_id | nodeName }}</strong>.
+        </p>
+
+        <div class="action-form mt-4">
+            <label>Actual Quantity Received</label>
+            <input type="number" [ngModel]="qtyReceived()" (ngModelChange)="qtyReceived.set($event)" class="glass-input"
+                min="0">
+
+            <div class="button-group mt-3">
+                <button class="btn btn-success" (click)="receiveStock()">✓ Commit Receipt</button>
+                <button class="btn btn-glass" (click)="selectedTransfer.set(null)">Cancel</button>
+            </div>
+        </div>
+    </div>
+    }
+</div>

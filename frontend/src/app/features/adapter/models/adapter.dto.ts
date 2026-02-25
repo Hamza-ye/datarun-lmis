@@ -18,6 +18,7 @@ export interface DeadLetterQueueItem {
     id: string;
     inbox_id: string;
     error_reason: string;
+    status: 'UNRESOLVED' | 'REPROCESSED';
     raw_payload_snapshot: any;
     created_at: string;
 }

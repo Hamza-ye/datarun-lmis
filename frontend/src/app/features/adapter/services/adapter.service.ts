@@ -21,10 +21,10 @@ export class AdapterService {
 
     // --- Admin / Hardening ---
     getDeadLetterQueue(): Observable<DeadLetterQueueItem[]> {
-        return this.http.get<DeadLetterQueueItem[]>('/api/adapter/dlq');
+        return this.http.get<DeadLetterQueueItem[]>('/api/adapter/admin/dlq');
     }
 
     replayDlq(id: string): Observable<any> {
-        return this.http.post(`/api/adapter/dlq/${id}/replay`, {});
+        return this.http.post(`/api/adapter/admin/dlq/${id}/retry`, {});
     }
 }

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { LedgerCommand, StockBalanceResponse, LedgerHistoryResponse } from '../models/ledger.dto';
+import { LedgerCommand, StockBalanceResponse, LedgerHistoryResponse, ApprovalActionRequest, StagedCommandResponse, InTransitTransferResponse, ReceiveTransferRequest } from '../models/ledger.dto';
 
 @Injectable({
     providedIn: 'root'
@@ -26,12 +26,24 @@ export class LedgerService {
     }
 
     // --- Area E: Gatekeeper ---
-    getPendingApprovals(): Observable<any[]> {
-        // In a full implementation, this could accept filters
-        return this.http.get<any[]>('/api/ledger/gatekeeper/pending');
+    getPendingApprovals(nodeId?: string): Observable<StagedCommandResponse[]> {
+        const params: Record<string, string> = {};
+        if (nodeId) params['node_id'] = nodeId;
+        return this.http.get<StagedCommandResponse[]>('/api/ledger/gatekeeper/staged', { params });
     }
 
-    resolveApproval(id: string, action: 'APPROVE' | 'REJECT', comment: string): Observable<any> {
-        return this.http.post(`/api/ledger/gatekeeper/${id}/resolve`, { action, comment });
+    resolveApproval(id: string, payload: ApprovalActionRequest): Observable<any> {
+        return this.http.post(`/api/ledger/gatekeeper/${id}/resolve`, payload);
+    }
+
+    // --- Area D: In-Transit ---
+    getTransfers(nodeId?: string): Observable<InTransitTransferResponse[]> {
+        const params: Record<string, string> = {};
+        if (nodeId) params['node_id'] = nodeId;
+        return this.http.get<InTransitTransferResponse[]>('/api/ledger/transfers', { params });
+    }
+
+    receiveTransfer(transferId: string, payload: ReceiveTransferRequest): Observable<any> {
+        return this.http.post(`/api/ledger/transfers/${transferId}/receive`, payload);
     }
 }

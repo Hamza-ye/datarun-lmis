@@ -30,3 +30,40 @@ export interface LedgerHistoryResponse {
     occurred_at: string;
     created_at: string;
 }
+
+export interface StagedCommandResponse {
+    id: string;
+    source_event_id: string;
+    command_type: string;
+    stage_reason: string;
+    status: 'AWAITING' | 'APPROVED' | 'REJECTED';
+    node_id: string;
+    payload: any;
+    created_at: string;
+}
+
+export interface ApprovalActionRequest {
+    action: 'APPROVE' | 'REJECT';
+    comment?: string;
+}
+
+export interface InTransitTransferResponse {
+    transfer_id: string;
+    source_node_id: string;
+    dest_node_id: string;
+    item_id: string;
+    qty_shipped: number;
+    qty_received: number;
+    status: 'OPEN' | 'PARTIAL' | 'COMPLETED' | 'STALE_AUTO_CLOSED' | 'FAILED_AUTO_CLOSE' | 'LOST';
+    dispatched_at: string;
+    auto_close_after?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ReceiveTransferRequest {
+    qty_received: number;
+    node_id: string;
+    occurred_at: string;
+    source_event_id: string;
+}

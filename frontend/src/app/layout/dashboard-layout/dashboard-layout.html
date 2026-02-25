@@ -1,77 +1,98 @@
-<mat-sidenav-container class="sidenav-container">
+<div class="glass-dashboard-container">
     <!-- Side Navigation -->
-    <mat-sidenav mode="side" opened class="sidenav">
-        <div class="sidenav-header">
-            <mat-icon>local_shipping</mat-icon>
-            <h2>NMCL</h2>
+    <aside class="glass-sidebar glass-panel">
+        <div class="sidebar-header">
+            <span class="logo-icon">📦</span>
+            <h2>National LMIS</h2>
         </div>
 
-        <mat-nav-list>
-            <div mat-subheader>Ledger (Read-Only)</div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Ledger (Read-Only)</div>
 
-            <a mat-list-item routerLink="/ledger/balances" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>inventory</mat-icon>
-                <div matListItemTitle>Stock Balances</div>
+            <a routerLink="/ledger/balances" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">📊</span>
+                <span class="link-text">Stock Balances</span>
             </a>
 
-            <a mat-list-item routerLink="/ledger/history" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>history</mat-icon>
-                <div matListItemTitle>Audit History</div>
+            <a routerLink="/ledger/history" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🕒</span>
+                <span class="link-text">Audit History</span>
             </a>
 
-            <div mat-subheader>Kernel Registry</div>
-
-            <a mat-list-item routerLink="/kernel/nodes" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>account_tree</mat-icon>
-                <div matListItemTitle>Node Hierarchy</div>
+            <a routerLink="/ledger/transfers" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🚚</span>
+                <span class="link-text">Active Transfers</span>
             </a>
 
-            <a mat-list-item routerLink="/kernel/commodities" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>category</mat-icon>
-                <div matListItemTitle>Commodity Dictionary</div>
+            <a routerLink="/ledger/staged-inbox" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🛡️</span>
+                <span class="link-text">Gatekeeper Inbox</span>
             </a>
 
-            <!-- Future Features Placeholder -->
-            <div *ngIf="(actor$ | async) as actor">
-                <div mat-subheader *ngIf="actor.roles.includes('system_admin')">Admin Functions</div>
+            <div class="nav-section-title">Kernel Registry</div>
 
-                <a mat-list-item routerLink="/adapter/inbox" routerLinkActive="active-link"
-                    *ngIf="actor.roles.includes('system_admin')">
-                    <mat-icon matListItemIcon>move_to_inbox</mat-icon>
-                    <div matListItemTitle>Adapter Inbox Simulator</div>
-                </a>
+            <a routerLink="/kernel/nodes" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🏥</span>
+                <span class="link-text">Node Hierarchy</span>
+            </a>
 
-                <a mat-list-item routerLink="/kernel/topology" routerLinkActive="active-link"
-                    *ngIf="actor.roles.includes('system_admin')">
-                    <mat-icon matListItemIcon>device_hub</mat-icon>
-                    <div matListItemTitle>Topology Corrections</div>
-                </a>
+            <a routerLink="/kernel/commodities" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">💊</span>
+                <span class="link-text">Commodity Dictionary</span>
+            </a>
 
-                <a mat-list-item routerLink="/ledger/loss-resolution" routerLinkActive="active-link"
-                    *ngIf="actor.roles.includes('system_admin') || actor.roles.includes('ledger_supervisor')">
-                    <mat-icon matListItemIcon>warning</mat-icon>
-                    <div matListItemTitle>Loss Resolution</div>
-                </a>
-            </div>
-        </mat-nav-list>
-    </mat-sidenav>
+            <!-- Admin Functions Placeholder -->
+            @if (actor(); as currentActor) {
+            @if (currentActor.roles.includes('system_admin')) {
+            <div class="nav-section-title">Admin Functions</div>
+
+            <a routerLink="/adapter/admin/dlq" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">📥</span>
+                <span class="link-text">DLQ Administration</span>
+            </a>
+
+            <a routerLink="/adapter/inbox" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">📩</span>
+                <span class="link-text">Adapter Inbox Simulator</span>
+            </a>
+
+            <a routerLink="/kernel/topology" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🔄</span>
+                <span class="link-text">Topology Corrections</span>
+            </a>
+            }
+
+            @if (currentActor.roles.includes('system_admin') || currentActor.roles.includes('ledger_supervisor')) {
+            <a routerLink="/ledger/loss-resolution" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">⚠️</span>
+                <span class="link-text">Loss Resolution</span>
+            </a>
+            }
+            }
+        </nav>
+    </aside>
 
     <!-- Main Content Area -->
-    <mat-sidenav-content>
+    <main class="main-content">
         <!-- Top Toolbar -->
-        <mat-toolbar color="primary">
-            <span>Malaria Commodity Ledger</span>
-            <span class="spacer"></span>
-            <div class="user-badge" *ngIf="(actor$ | async) as actor">
-                <mat-icon>account_circle</mat-icon>
-                <span class="user-id">{{ actor.actor_id }}</span>
-                <span class="role-badge" *ngFor="let role of actor.roles">{{ role }}</span>
+        <header class="glass-topbar glass-panel">
+            <h1 class="page-title">Malaria Commodity Ledger</h1>
+
+            <div class="spacer"></div>
+
+            @if (actor(); as currentActor) {
+            <div class="user-badge glass-panel">
+                <span class="user-id">{{ currentActor.actor_id }}</span>
+                @for (role of currentActor.roles; track role) {
+                <span class="role-badge badge-success badge">{{ role }}</span>
+                }
             </div>
-        </mat-toolbar>
+            }
+        </header>
 
         <!-- Page Content -->
         <div class="content-wrapper">
             <router-outlet></router-outlet>
         </div>
-    </mat-sidenav-content>
-</mat-sidenav-container>
+    </main>
+</div>

@@ -1,0 +1,69 @@
+<div class="inbox-container">
+    <div class="header-actions">
+        <h2>Gatekeeper Inbox (Awaiting Approval)</h2>
+        <button class="btn btn-primary" (click)="refreshInbox()">↻ Refresh</button>
+    </div>
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center">Loading inbox...</div>
+    } @else {
+    <table class="glass-table glass-panel">
+        <thead>
+            <tr>
+                <th>Event ID</th>
+                <th>Type</th>
+                <th>Node</th>
+                <th>Reason Staged</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (item of items(); track item.id) {
+            <tr>
+                <td class="font-mono text-sm">{{ item.source_event_id | slice:0:8 }}...</td>
+                <td>
+                    <span class="badge badge-warning">{{ item.command_type }}</span>
+                </td>
+                <td>{{ item.node_id | nodeName }}</td>
+                <td>{{ item.stage_reason }}</td>
+                <td class="text-sm text-muted">{{ item.created_at | date:'short' }}</td>
+                <td>
+                    <button class="btn btn-glass" (click)="selectItem(item)">
+                        Review
+                    </button>
+                </td>
+            </tr>
+            } @empty {
+            <tr>
+                <td colspan="6" class="text-center text-muted py-8">
+                    No staged commands awaiting your review.
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    <!-- Inline Review Panel -->
+    @if (selectedItem(); as selected) {
+    <div class="glass-panel review-panel mt-4">
+        <h3>Review Command: {{ selected.source_event_id }}</h3>
+        <div class="payload-preview font-mono text-sm bg-dark p-2 mt-2">
+            {{ selected.payload | json }}
+        </div>
+
+        <div class="action-form mt-4">
+            <label>Review Comment (Optional)</label>
+            <input type="text" [ngModel]="approvalComment()" (ngModelChange)="approvalComment.set($event)"
+                class="glass-input" placeholder="Enter reason for rejection or approval notes...">
+
+            <div class="button-group mt-3">
+                <button class="btn btn-success" (click)="resolveItem('APPROVE')">✓ Approve Transaction</button>
+                <button class="btn btn-danger" (click)="resolveItem('REJECT')">✕ Reject Transaction</button>
+                <button class="btn btn-glass" (click)="selectedItem.set(null)">Cancel</button>
+            </div>
+        </div>
+    </div>
+    }
+</div>
