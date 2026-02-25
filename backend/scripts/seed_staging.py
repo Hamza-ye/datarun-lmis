@@ -64,8 +64,12 @@ async def seed_staging_db():
                         },
                         "destination": {
                             "url": "http://localhost:8000/api/ledger/commands",
-                            "method": "POST"
+                            "method": "POST",
+                            "headers": {
+                                "Authorization": "Bearer mock_system_admin_token"
+                            }
                         },
+                        "dry_run": { "supported": True, "inject_path": "$.dry_run" },
                         "dictionaries": {
                             "external": {
                                 "node_map": {
@@ -81,37 +85,103 @@ async def seed_staging_db():
                         "processing_pipelines": {},
                         "output_template": [
                             {
-                                "envelope": {
-                                    "source_event_id": {"path": "$.source_event_id"},
-                                    "timestamp": {"path": "$.date"}
+                        "envelope": {
+                            "source_event_id": {"path": "$.tracking_id"},
+                            "timestamp": {"path": "$.occurred_at"}
+                        },
+                        "static_injection": {
+                            "command_type": "RECEIPT"
+                        },
+                        "global_fields": {
+                            "target_node": {
+                                "path": "$.destination_facility",
+                                "dictionary": "external.node_map"
+                            }
+                        },
+                        "iterator": {
+                            "path": "$",
+                            "fields": {
+                                "item_id": {
+                                    "path": "$.commodity_code",
+                                    "dictionary": "external.item_map"
                                 },
-                                "static_injection": {
-                                    "command_type": "RECEIPT"
-                                },
-                                "global_fields": {
-                                    "target_node": {
-                                        "path": "$.facility_code",
-                                        "dictionary": "external.node_map"
-                                    }
-                                },
-                                "iterator": {
-                                    "path": "$",
-                                    "fields": {
-                                        "item_id": {
-                                            "path": "$.product_code",
-                                            "dictionary": "external.item_map"
-                                        },
-                                        "quantity": {
-                                            "path": "$.quantity_received"
-                                        }
-                                    }
+                                "quantity": {
+                                    "path": "$.quantity"
                                 }
+                            }
+                        }
                             }
                         ]
                     }
                 )
             db.add(contract)
-            logger.info("Seeded MappingContract.")
+            
+            # Additional Contract: hf_issue_903 (DISPATCH/ISSUE)
+            await db.execute(delete(MappingContract).where(MappingContract.id == "hf_issue_903"))
+            issue_contract = MappingContract(
+                id="hf_issue_903",
+                version="v1",
+                status="ACTIVE",
+                dsl_config={
+                    "contract_info": { "id": "hf_issue_903", "version": "v1", "status": "ACTIVE", "source_system": "legacy_excel" },
+                    "ingress": { "trigger_path": "$.type", "trigger_value": "ISSUE" },
+                    "destination": { "url": "http://localhost:8000/api/ledger/commands", "method": "POST", "headers": {"Authorization": "Bearer mock_system_admin_token"} },
+                    "dictionaries": {
+                        "external": {
+                            "node_map": { "namespace": "dhis2", "on_unmapped": "ERROR" },
+                            "item_map": { "namespace": "lmis", "on_unmapped": "ERROR" }
+                        }
+                    },
+                    "processing_pipelines": {},
+                    "output_template": [{
+                        "envelope": { "source_event_id": {"path": "$.tracking_id"}, "timestamp": {"path": "$.occurred_at"} },
+                        "static_injection": { "command_type": "DISPATCH" },
+                        "global_fields": { "target_node": {"path": "$.destination_facility", "dictionary": "external.node_map"} },
+                        "iterator": {
+                            "path": "$",
+                            "fields": {
+                                "item_id": {"path": "$.commodity_code", "dictionary": "external.item_map"},
+                                "quantity": {"path": "$.quantity"}
+                            }
+                        }
+                    }]
+                }
+            )
+            db.add(issue_contract)
+
+            # Additional Contract: dhis2_consumption_api (ADJUSTMENT)
+            await db.execute(delete(MappingContract).where(MappingContract.id == "dhis2_consumption_api"))
+            consumption_contract = MappingContract(
+                id="dhis2_consumption_api",
+                version="v1",
+                status="ACTIVE",
+                dsl_config={
+                    "contract_info": { "id": "dhis2_consumption_api", "version": "v1", "status": "ACTIVE", "source_system": "dhis2" },
+                    "ingress": { "trigger_path": "$.type", "trigger_value": "CONSUMPTION" },
+                    "destination": { "url": "http://localhost:8000/api/ledger/commands", "method": "POST", "headers": {"Authorization": "Bearer mock_system_admin_token"} },
+                    "dictionaries": {
+                        "external": {
+                            "node_map": { "namespace": "dhis2", "on_unmapped": "ERROR" },
+                            "item_map": { "namespace": "lmis", "on_unmapped": "ERROR" }
+                        }
+                    },
+                    "processing_pipelines": {},
+                    "output_template": [{
+                        "envelope": { "source_event_id": {"path": "$.tracking_id"}, "timestamp": {"path": "$.occurred_at"} },
+                        "static_injection": { "command_type": "ADJUSTMENT" },
+                        "global_fields": { "target_node": {"path": "$.destination_facility", "dictionary": "external.node_map"} },
+                        "iterator": {
+                            "path": "$",
+                            "fields": {
+                                "item_id": {"path": "$.commodity_code", "dictionary": "external.item_map"},
+                                "quantity": {"path": "$.quantity"}
+                            }
+                        }
+                    }]
+                }
+            )
+            db.add(consumption_contract)
+            logger.info("Seeded MappingContracts.")
 
             # Adapter Crosswalk
             result = await db.execute(select(AdapterCrosswalk).filter_by(namespace="dhis2", source_value="C_1"))

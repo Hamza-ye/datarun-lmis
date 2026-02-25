@@ -8,10 +8,13 @@
         <div class="form-row">
             <mat-form-field appearance="outline" class="flex-grow">
                 <mat-label>Mapping Profile</mat-label>
-                <mat-select [(ngModel)]="payload.mapping_profile" name="mapping_profile" required>
-                    <mat-option value="hf_receipt_902">hf_receipt_902 (Receipt)</mat-option>
-                    <mat-option value="hf_issue_903">hf_issue_903 (Issue)</mat-option>
-                    <mat-option value="dhis2_consumption_api">dhis2_consumption_api</mat-option>
+                <mat-select [(ngModel)]="payload.mapping_profile" name="mapping_profile" required
+                    [disabled]="contracts.length === 0">
+                    @for (contract of contracts; track contract.id) {
+                    <mat-option [value]="contract.id">{{ contract.id }} (v{{ contract.version }})</mat-option>
+                    } @empty {
+                    <mat-option value="" disabled>No Active Contracts Found</mat-option>
+                    }
                 </mat-select>
                 <mat-hint>The mapping schema version to execute against the payload.</mat-hint>
             </mat-form-field>

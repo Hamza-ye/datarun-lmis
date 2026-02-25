@@ -1,29 +1,18 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
+import { FormsModule } from '@angular/forms';
 
 import { LedgerService } from '../../services/ledger.service';
 import { StockBalanceResponse } from '../../models/ledger.dto';
+import { NodeNamePipe } from '../../../../shared/pipes/node-name.pipe';
 
 @Component({
   selector: 'app-stock-balances',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatButtonModule
+    FormsModule,
+    NodeNamePipe
   ],
   templateUrl: './stock-balances.html',
   styleUrls: ['./stock-balances.scss']
@@ -31,40 +20,38 @@ import { StockBalanceResponse } from '../../models/ledger.dto';
 export class StockBalances implements OnInit {
   private ledgerService = inject(LedgerService);
 
-  displayedColumns: string[] = ['node_id', 'item_id', 'quantity', 'last_updated'];
-  dataSource: MatTableDataSource<StockBalanceResponse>;
+  public balances = signal<StockBalanceResponse[]>([]);
+  public isLoading = signal<boolean>(true);
+  public searchTerm = signal<string>('');
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  // Computed signal to instantly filter the table in memory
+  public filteredBalances = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    const all = this.balances();
+    if (!term) return all;
 
-  constructor() {
-    // Initial empty source
-    this.dataSource = new MatTableDataSource<StockBalanceResponse>([]);
-  }
+    return all.filter(b =>
+      b.item_id.toLowerCase().includes(term) ||
+      b.node_id.toLowerCase().includes(term)
+    );
+  });
 
   ngOnInit() {
     this.refreshData();
   }
 
   refreshData() {
+    this.isLoading.set(true);
     this.ledgerService.getBalances().subscribe({
       next: (data) => {
-        this.dataSource = new MatTableDataSource(data);
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
+        this.balances.set(data);
+        this.isLoading.set(false);
       },
       error: (err) => {
         console.error('Failed to fetch stock balances', err);
+        this.balances.set([]);
+        this.isLoading.set(false);
       }
     });
-  }
-
-  applyFilter(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
   }
 }

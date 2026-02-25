@@ -56,7 +56,7 @@ async def list_commodities(
     actor.require_role("system_admin")
     stmt = select(CommodityRegistry)
     result = await db.execute(stmt)
-    return [{"item_id": c.item_id, "code": c.code, "name": c.name, "base_unit": c.base_unit} for c in result.scalars().all()]
+    return [{"item_id": c.item_id, "code": c.code, "name": c.name, "base_unit": c.base_unit, "status": c.status} for c in result.scalars().all()]
 
 @router.post("/commodities", status_code=status.HTTP_201_CREATED)
 async def create_commodity(

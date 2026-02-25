@@ -31,7 +31,7 @@ class ReportingService:
             stmt = stmt.where(StockBalance.node_id == node_id)
         else:
             # If requesting 'all', filter heavily to only what they are allowed to see
-            if "GLOBAL_ADMIN" not in actor.roles:
+            if "GLOBAL" not in actor.allowed_nodes:
                 if not actor.allowed_nodes:
                     return [] # Fast path return empty if they have no node rights
                 stmt = stmt.where(StockBalance.node_id.in_(actor.allowed_nodes))

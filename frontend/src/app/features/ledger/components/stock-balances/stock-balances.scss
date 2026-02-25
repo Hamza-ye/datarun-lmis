@@ -1,40 +1,63 @@
-.table-actions {
-    margin-bottom: 16px;
+.balances-container {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
-    .filter-field {
-        width: 300px;
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-main);
     }
 }
 
-.table-container {
-    width: 100%;
-    margin-bottom: 16px;
+.actions-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
 }
 
-.qty-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    background-color: #e8f5e9;
-    color: #2e7d32;
+.search-input {
+    width: 250px;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-glass-border);
+    background: var(--color-glass-bg);
+    color: var(--color-text-main);
+    font-size: 0.875rem;
 
-    &.low {
-        background-color: #fff3e0;
-        color: #ef6c00;
-    }
-
-    &.negative {
-        background-color: #ffebee;
-        color: #c62828;
+    &:focus {
+        outline: none;
+        border-color: var(--color-primary);
     }
 }
 
-.empty-state {
-    padding: 32px;
+.text-center {
     text-align: center;
-    color: #666;
-    font-style: italic;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-danger {
+    color: var(--color-danger);
+}
+
+.py-8 {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.font-mono {
+    font-family: monospace;
+}
+
+.text-sm {
+    font-size: 0.875rem;
 }

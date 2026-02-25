@@ -51,7 +51,12 @@ async def receive_external_payload(
     if payload.dry_run:
         # Instantly resolve and map payload for preview without saving to DB
         dsl = MappingContractDSL(**contract.dsl_config)
-        commands = await MapperEngine.run(db_session, payload.payload, contract=dsl)
+        try:
+            commands = await MapperEngine.run(db_session, payload.payload, contract=dsl)
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail=str(e))
+            
         return {
             "message": "Dry-run successful", 
             "dry_run": True, 

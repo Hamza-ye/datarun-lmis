@@ -47,6 +47,14 @@
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
     padding-left: 0.75rem;
+
+    &.text-warning {
+        color: var(--color-warning);
+    }
+
+    &.text-danger {
+        color: var(--color-danger);
+    }
 }
 
 .nav-link {

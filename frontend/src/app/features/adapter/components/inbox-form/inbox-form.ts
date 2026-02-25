@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AdapterService } from '../../services/adapter.service';
-import { InboxPayload } from '../../models/adapter.dto';
+import { InboxPayload, MappingContract } from '../../models/adapter.dto';
 import { ErrorEnvelope } from '../../../../core/models/error-envelope.dto';
 
 @Component({
@@ -32,21 +32,35 @@ import { ErrorEnvelope } from '../../../../core/models/error-envelope.dto';
   templateUrl: './inbox-form.html',
   styleUrls: ['./inbox-form.scss']
 })
-export class InboxForm {
+export class InboxForm implements OnInit {
   private adapterService = inject(AdapterService);
 
   payload: Partial<InboxPayload> = {
-    mapping_profile: 'hf_receipt_902',
+    mapping_profile: '',
     source_system: 'manual_simulator',
     source_event_id: crypto.randomUUID(),
     dry_run: true
   };
 
-  rawJsonInput: string = '{\n  "facility_code": "C_1",\n  "product_code": "AL_6x3",\n  "quantity_received": 150,\n  "date": "2026-02-23"\n}';
+  rawJsonInput: string = '{\n  "tracking_id": "test-sync-01",\n  "type": "RECEIPT",\n  "source_system": "DHIS2",\n  "destination_facility": "CLINIC_1",\n  "commodity_code": "AL_6x3",\n  "transaction_type": "PHYSICAL_COUNT",\n  "quantity": 500,\n  "occurred_at": "2026-02-25T12:00:00Z"\n}';
   jsonError: boolean = false;
   isSubmitting: boolean = false;
 
   result: { status: 'success' | 'error', details: any, correlation_id?: string } | null = null;
+  contracts: MappingContract[] = [];
+
+  ngOnInit() {
+    this.adapterService.getContracts().subscribe({
+      next: (data) => {
+        // Only show active contracts in the dropdown
+        this.contracts = data.filter(c => c.status === 'ACTIVE');
+        if (this.contracts.length > 0) {
+          this.payload.mapping_profile = this.contracts[0].id;
+        }
+      },
+      error: (err) => console.error("Failed to load mapping contracts", err)
+    });
+  }
 
   generateId() {
     this.payload.source_event_id = crypto.randomUUID();

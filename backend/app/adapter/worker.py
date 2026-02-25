@@ -86,12 +86,14 @@ class AdapterWorker:
             
             # 4. Strict Forwarding & HTTP Failure Evaluation
             url = dsl.destination.url
+            headers = dsl.destination.headers or {}
             async with httpx.AsyncClient() as client:
                 for cmd in commands:
                     try:
                         response = await client.request(
                             method=dsl.destination.method,
                             url=url,
+                            headers=headers,
                             json=cmd,
                             timeout=10.0
                         )

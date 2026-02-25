@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { InboxPayload, AdapterInboxItem, DeadLetterQueueItem } from '../models/adapter.dto';
+import { InboxPayload, AdapterInboxItem, DeadLetterQueueItem, MappingContract } from '../models/adapter.dto';
 
 @Injectable({
     providedIn: 'root'
@@ -26,5 +26,9 @@ export class AdapterService {
 
     replayDlq(id: string): Observable<any> {
         return this.http.post(`/api/adapter/admin/dlq/${id}/retry`, {});
+    }
+
+    getContracts(): Observable<MappingContract[]> {
+        return this.http.get<MappingContract[]>('/api/adapter/admin/contracts');
     }
 }

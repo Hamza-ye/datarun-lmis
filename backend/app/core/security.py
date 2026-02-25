@@ -22,7 +22,7 @@ class ActorContext(BaseModel):
     def require_node_access(self, node_id: str):
         # In a real system, you would check if node_id is a child of any of allowed_nodes
         # utilizing the Shared Kernel's NodeRegistry. For MVP we check direct exact match.
-        if "GLOBAL_ADMIN" in self.roles:
+        if "GLOBAL" in self.allowed_nodes:
             return
             
         if node_id not in self.allowed_nodes:
@@ -70,7 +70,7 @@ async def get_current_actor(credentials: HTTPAuthorizationCredentials = Security
     elif token == "mock_system_admin_token":
         return ActorContext(
             actor_id="admin_1",
-            roles=["system_admin"],
+            roles=["system_admin", "ledger_supervisor", "ledger_system"],
             allowed_nodes=["GLOBAL"]
         )
          

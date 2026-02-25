@@ -1,79 +1,88 @@
-.table-actions {
-    margin-bottom: 16px;
+.history-container {
     display: flex;
-    gap: 16px;
-    align-items: center;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
-    .filter-field {
-        width: 250px;
+.header-actions {
+    h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-main);
     }
 }
 
-.table-container {
-    width: 100%;
-    margin-bottom: 16px;
-}
+.filter-bar {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    padding: 1.5rem;
 
-.id-col {
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: #555;
-}
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
 
-.muted-col {
-    color: #888;
-    font-size: 0.85rem;
-}
-
-.positive {
-    color: #2e7d32;
-    font-weight: 500;
-}
-
-.negative {
-    color: #c62828;
-    font-weight: 500;
-}
-
-.type-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    background-color: #e0e0e0;
-    color: #333;
-
-    &.receipt {
-        background-color: #e3f2fd;
-        color: #1565c0;
+        span {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
     }
 
-    &.issue,
-    &.dispatch {
-        background-color: #fff3e0;
-        color: #ef6c00;
-    }
-
-    &.adjustment {
-        background-color: #f3e5f5;
-        color: #6a1b9a;
+    button {
+        height: 42px; // Match input height
     }
 }
 
-.empty-selection {
-    padding: 64px 32px;
+.glass-input {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-glass-border);
+    background: var(--color-glass-bg);
+    color: var(--color-text-main);
+    font-size: 0.875rem;
+
+    &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+}
+
+.text-center {
     text-align: center;
-    color: #757575;
-    background-color: #fafafa;
-    border: 2px dashed #e0e0e0;
-    border-radius: 8px;
+}
 
-    mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        margin-bottom: 16px;
-        opacity: 0.5;
-    }
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-success {
+    color: var(--color-success);
+}
+
+.text-danger {
+    color: var(--color-danger);
+}
+
+.text-warning {
+    color: var(--color-warning);
+}
+
+.py-8 {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.font-mono {
+    font-family: monospace;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.font-bold {
+    font-weight: 600;
 }

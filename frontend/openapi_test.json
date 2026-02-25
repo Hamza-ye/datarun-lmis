@@ -1,0 +1,1 @@
+{"openapi":"3.1.0","info":{"title":"Datarun LMIS","description":"Datarun LMIS - Unified API","version":"1.0.0"},"paths":{"/health":{"get":{"summary":"Health Check","operationId":"health_check_health_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}}}}

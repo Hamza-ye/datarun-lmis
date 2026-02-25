@@ -22,3 +22,10 @@ export interface DeadLetterQueueItem {
     raw_payload_snapshot: any;
     created_at: string;
 }
+
+export interface MappingContract {
+    id: string;
+    version: string;
+    status: 'DRAFT' | 'ACTIVE' | 'DEPRECATED';
+    created_at: string;
+}

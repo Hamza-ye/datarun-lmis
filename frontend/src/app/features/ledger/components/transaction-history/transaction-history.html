@@ -1,80 +1,69 @@
-<div class="lmis-card">
-    <h2>Transaction History Audit</h2>
-
-    <div class="table-actions">
-        <!-- Search Inputs for Node/Item -->
-        <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Node ID</mat-label>
-            <input matInput [(ngModel)]="searchNodeId" placeholder="E.g. DIST_1">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Item ID</mat-label>
-            <input matInput [(ngModel)]="searchItemId" placeholder="E.g. AL_6x3">
-        </mat-form-field>
-
-        <button mat-raised-button color="primary" [disabled]="!searchNodeId || !searchItemId"
-            (click)="refreshHistory()">Fetch History</button>
+<div class="history-container">
+    <div class="header-actions">
+        <h2>Immutable Audit Trail</h2>
     </div>
 
-    <div class="table-container mat-elevation-z2" *ngIf="dataSource.data.length > 0">
-        <table mat-table [dataSource]="dataSource" matSort>
+    <div class="glass-panel filter-bar">
+        <label>
+            <span>Node UUID</span>
+            <input type="text" class="glass-input" placeholder="e.g. fd496d00-..." [ngModel]="searchNodeId()"
+                (ngModelChange)="searchNodeId.set($event)">
+        </label>
 
-            <!-- Source Event ID / Idempotency Key -->
-            <ng-container matColumnDef="source_event_id">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Event ID </th>
-                <td mat-cell *matCellDef="let element" class="id-col"> {{element.source_event_id}} </td>
-            </ng-container>
+        <label>
+            <span>Commodity ID</span>
+            <input type="text" class="glass-input" placeholder="e.g. AL_6x3" [ngModel]="searchItemId()"
+                (ngModelChange)="searchItemId.set($event)">
+        </label>
 
-            <!-- Transaction Type -->
-            <ng-container matColumnDef="transaction_type">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Type </th>
-                <td mat-cell *matCellDef="let element">
-                    <span class="type-badge" [ngClass]="element.transaction_type.toLowerCase()">
-                        {{element.transaction_type}}
+        <button class="btn btn-primary" (click)="refreshHistory()">Search Ledger</button>
+    </div>
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center">Querying immutable event store...</div>
+    } @else {
+    @if (hasSearched()) {
+    <table class="glass-table glass-panel">
+        <thead>
+            <tr>
+                <th>Event Source</th>
+                <th>Type</th>
+                <th>Delta</th>
+                <th>Running Balance</th>
+                <th>Occurred At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (record of history(); track record.source_event_id) {
+            <tr>
+                <td class="font-mono text-sm" [title]="record.source_event_id">
+                    {{ record.source_event_id | slice:0:8 }}...
+                </td>
+                <td>
+                    <span class="badge" [ngClass]="{
+                                    'badge-success': record.quantity > 0,
+                                    'badge-danger': record.quantity < 0,
+                                    'badge-warning': record.quantity === 0
+                                }">
+                        {{ record.transaction_type }}
                     </span>
                 </td>
-            </ng-container>
-
-            <!-- Quantity Delta -->
-            <ng-container matColumnDef="quantity">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Qty Delta </th>
-                <td mat-cell *matCellDef="let element">
-                    <span [class.positive]="element.quantity > 0" [class.negative]="element.quantity < 0">
-                        {{element.quantity > 0 ? '+' : ''}}{{element.quantity}}
-                    </span>
+                <td class="font-mono"
+                    [ngClass]="{'text-success': record.quantity > 0, 'text-danger': record.quantity < 0}">
+                    {{ record.quantity > 0 ? '+' : '' }}{{ record.quantity }}
                 </td>
-            </ng-container>
-
-            <!-- Running Balance -->
-            <ng-container matColumnDef="running_balance">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Balance </th>
-                <td mat-cell *matCellDef="let element"> {{element.running_balance}} </td>
-            </ng-container>
-
-            <!-- Occurred At Column -->
-            <ng-container matColumnDef="occurred_at">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Source Timestamp </th>
-                <td mat-cell *matCellDef="let element"> {{element.occurred_at | date:'medium'}} </td>
-            </ng-container>
-
-            <!-- Created At Column -->
-            <ng-container matColumnDef="created_at">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> Processed At </th>
-                <td mat-cell *matCellDef="let element" class="muted-col"> {{element.created_at | date:'short'}} </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="lmis-row"></tr>
-        </table>
-    </div>
-
-    <mat-paginator *ngIf="dataSource.data.length > 0" [pageSizeOptions]="[20, 50, 100]"
-        aria-label="Select history page"></mat-paginator>
-
-    <!-- Empty State before search -->
-    <div class="empty-selection" *ngIf="dataSource.data.length === 0">
-        <mat-icon>manage_search</mat-icon>
-        <p>Enter a Node ID and Item ID to view full transaction lineage.</p>
-    </div>
+                <td class="font-mono font-bold">{{ record.running_balance }}</td>
+                <td class="text-sm text-muted">{{ record.occurred_at | date:'medium' }}</td>
+            </tr>
+            } @empty {
+            <tr>
+                <td colspan="5" class="text-center text-muted py-8">
+                    No history found for this combination in the Ledger.
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+    }
 </div>

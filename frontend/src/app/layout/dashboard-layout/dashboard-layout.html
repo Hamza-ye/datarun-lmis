@@ -7,29 +7,13 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section-title">Ledger (Read-Only)</div>
+            <!-- Section 1: Standard Operational Reality -->
+            <div class="nav-section-title">Ledger</div>
 
             <a routerLink="/ledger/balances" routerLinkActive="active-link" class="nav-link">
                 <span class="link-icon">📊</span>
                 <span class="link-text">Stock Balances</span>
             </a>
-
-            <a routerLink="/ledger/history" routerLinkActive="active-link" class="nav-link">
-                <span class="link-icon">🕒</span>
-                <span class="link-text">Audit History</span>
-            </a>
-
-            <a routerLink="/ledger/transfers" routerLinkActive="active-link" class="nav-link">
-                <span class="link-icon">🚚</span>
-                <span class="link-text">Active Transfers</span>
-            </a>
-
-            <a routerLink="/ledger/staged-inbox" routerLinkActive="active-link" class="nav-link">
-                <span class="link-icon">🛡️</span>
-                <span class="link-text">Gatekeeper Inbox</span>
-            </a>
-
-            <div class="nav-section-title">Kernel Registry</div>
 
             <a routerLink="/kernel/nodes" routerLinkActive="active-link" class="nav-link">
                 <span class="link-icon">🏥</span>
@@ -38,17 +22,47 @@
 
             <a routerLink="/kernel/commodities" routerLinkActive="active-link" class="nav-link">
                 <span class="link-icon">💊</span>
-                <span class="link-text">Commodity Dictionary</span>
+                <span class="link-text">Commodities</span>
             </a>
 
-            <!-- Admin Functions Placeholder -->
+            <a routerLink="/ledger/transfers" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🚚</span>
+                <span class="link-text">Active Transfers</span>
+            </a>
+
+            <!-- Section 2: Audit & Accountability -->
+            <div class="nav-section-title">Audit Trail</div>
+
+            <a routerLink="/ledger/history" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🕒</span>
+                <span class="link-text">Transaction History</span>
+            </a>
+
+            <!-- Admin Functions Segment -->
             @if (actor(); as currentActor) {
+
+            @if (currentActor.roles.includes('system_admin') || currentActor.roles.includes('ledger_supervisor')) {
+            <!-- Section 3: Privileged Ledger Writes -->
+            <div class="nav-section-title text-warning">Ledger Operations</div>
+
+            <a routerLink="/ledger/staged-inbox" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">🛡️</span>
+                <span class="link-text">Gatekeeper Inbox</span>
+            </a>
+
+            <a routerLink="/ledger/loss-resolution" routerLinkActive="active-link" class="nav-link">
+                <span class="link-icon">⚠️</span>
+                <span class="link-text">Loss Resolution</span>
+            </a>
+            }
+
             @if (currentActor.roles.includes('system_admin')) {
-            <div class="nav-section-title">Admin Functions</div>
+            <!-- Section 4: Pure Admin Config & Unstructured Integration Data -->
+            <div class="nav-section-title text-danger">Adapter Administration</div>
 
             <a routerLink="/adapter/admin/dlq" routerLinkActive="active-link" class="nav-link">
                 <span class="link-icon">📥</span>
-                <span class="link-text">DLQ Administration</span>
+                <span class="link-text">DLQ Management</span>
             </a>
 
             <a routerLink="/adapter/inbox" routerLinkActive="active-link" class="nav-link">
@@ -62,12 +76,6 @@
             </a>
             }
 
-            @if (currentActor.roles.includes('system_admin') || currentActor.roles.includes('ledger_supervisor')) {
-            <a routerLink="/ledger/loss-resolution" routerLinkActive="active-link" class="nav-link">
-                <span class="link-icon">⚠️</span>
-                <span class="link-text">Loss Resolution</span>
-            </a>
-            }
             }
         </nav>
     </aside>
