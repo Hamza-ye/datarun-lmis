@@ -13,6 +13,8 @@ from app.ledger.schemas.command import TransactionType
 from typing import List, Optional
 from app.ledger.schemas.reporting import StockBalanceResponse, LedgerHistoryResponse
 from app.ledger.domain.reporting.service import ReportingService
+from app.ledger.schemas.gatekeeper import ApprovalActionRequest, StagedCommandResponse
+from app.ledger.schemas.in_transit import InTransitTransferResponse, ReceiveTransferRequest
 
 ledger_router = APIRouter(prefix="/api/ledger", tags=["Ledger Core"])
 gatekeeper_router = APIRouter(prefix="/api/ledger/gatekeeper", tags=["Ledger Gatekeeper"])
@@ -75,12 +77,44 @@ async def submit_ledger_command(
         await db.commit()
         return {"status": "COMMITTED", "event_id": command.source_event_id}
 
+@gatekeeper_router.get("/staged")
+async def list_staged_commands(
+    node_id: Optional[str] = None,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List transactions awaiting approval for the actor's allowed nodes.
+    """
+    actor.require_role("ledger_supervisor")
+    from app.ledger.models.gatekeeper import StagedCommand
+    from sqlalchemy.future import select
+    
+    stmt = select(StagedCommand).where(StagedCommand.status == "AWAITING")
+    if node_id:
+        actor.require_node_access(node_id)
+        stmt = stmt.where(StagedCommand.node_id == node_id)
+    elif "GLOBAL" not in actor.allowed_nodes:
+        # Prevent supervisors from seeing other districts
+        stmt = stmt.where(StagedCommand.node_id.in_(actor.allowed_nodes))
+        
+    result = await db.execute(stmt)
+    staged = result.scalars().all()
+    return [{
+        "id": str(s.id),
+        "source_event_id": s.source_event_id,
+        "command_type": s.command_type,
+        "payload": s.payload,
+        "stage_reason": s.stage_reason,
+        "node_id": s.node_id,
+        "status": s.status,
+        "created_at": s.created_at
+    } for s in staged]
+
 @gatekeeper_router.post("/{staged_id}/resolve")
 async def resolve_staged_command(
     staged_id: UUID,
-    # In a real app we'd take a Pydantic model for the payload
-    # using a dict shortcut for the MVP example
-    action_data: dict, 
+    action_data: ApprovalActionRequest, 
     actor: ActorContext = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db)
 ):
@@ -91,11 +125,11 @@ async def resolve_staged_command(
     
     from app.ledger.schemas.gatekeeper import SupervisorActionPayload, ApprovalActionType
     
-    action_type = ApprovalActionType.APPROVE if action_data.get("action") == "APPROVE" else ApprovalActionType.REJECT
+    action_type = ApprovalActionType.APPROVE if action_data.action == "APPROVE" else ApprovalActionType.REJECT
     payload = SupervisorActionPayload(
          actor_id=actor.actor_id,
          action=action_type,
-         comment=action_data.get("comment", "")
+         comment=action_data.comment
     )
     
     # (In a real system we'd fetch the staged command first here to check `actor.require_node_access(cmd.node_id)`)
@@ -141,3 +175,89 @@ async def get_inventory_history(
     history = await ReportingService.get_history(db, actor, node_id, item_id, limit)
     return history
 
+@ledger_router.get("/transfers", response_model=List[InTransitTransferResponse])
+async def list_transfers(
+    node_id: Optional[str] = None,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    CQRS Read API: Fetches pending incoming/outgoing transfers.
+    Automatically filters results based on the JWT `allowed_nodes` claims.
+    """
+    from app.ledger.models.in_transit import InTransitRegistry
+    from sqlalchemy.future import select
+    from sqlalchemy import or_
+
+    stmt = select(InTransitRegistry)
+    
+    if node_id:
+        if "GLOBAL" not in actor.allowed_nodes and node_id not in actor.allowed_nodes:
+            raise HTTPException(status_code=403, detail="No access to this node.")
+        stmt = stmt.where(or_(InTransitRegistry.source_node_id == node_id, InTransitRegistry.dest_node_id == node_id))
+    elif "GLOBAL" not in actor.allowed_nodes:
+        stmt = stmt.where(or_(
+            InTransitRegistry.source_node_id.in_(actor.allowed_nodes),
+            InTransitRegistry.dest_node_id.in_(actor.allowed_nodes)
+        ))
+        
+    result = await db.execute(stmt)
+    transfers = result.scalars().all()
+    return transfers
+
+@ledger_router.post("/transfers/{transfer_id}/receive", status_code=status.HTTP_201_CREATED)
+async def receive_transfer(
+    transfer_id: UUID,
+    payload: ReceiveTransferRequest,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    UI Endpoint to mark a dispatched transfer as received.
+    """
+    if "GLOBAL" not in actor.allowed_nodes and payload.node_id not in actor.allowed_nodes:
+        raise HTTPException(status_code=403, detail="No access to this node.")
+        
+    actor.require_role("ledger_system") 
+    
+    from app.ledger.models.in_transit import InTransitRegistry
+    from sqlalchemy.future import select
+    
+    stmt = select(InTransitRegistry).where(InTransitRegistry.transfer_id == transfer_id)
+    transfer = (await db.execute(stmt)).scalars().first()
+    
+    if not transfer:
+        raise HTTPException(status_code=404, detail="Transfer not found")
+        
+    if transfer.dest_node_id != payload.node_id:
+        raise HTTPException(status_code=400, detail="Destination node mismatch")
+
+    from app.ledger.schemas.command import LedgerCommand, TransactionType
+    
+    receipt_command = LedgerCommand(
+        source_event_id=payload.source_event_id,
+        version_timestamp=int(payload.occurred_at.timestamp()),
+        transaction_type=TransactionType.RECEIPT,
+        node_id=payload.node_id,
+        item_id=transfer.item_id,
+        quantity=payload.qty_received,
+        transfer_id=str(transfer_id)
+    )
+    
+    from app.ledger.domain.idempotency.service import IdempotencyService
+    idem_result = await IdempotencyService.check_or_register_command(db, receipt_command)
+    if idem_result.action == "IGNORE":
+        await db.commit()
+        return {"status": "IGNORED", "message": idem_result.reason, "existing_summary": idem_result.existing_summary}
+        
+    result = await InTransitService.process_receipt(db, receipt_command, str(transfer_id))
+    
+    from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
+    stmt_idem = select(IdempotencyRegistry).where(IdempotencyRegistry.source_event_id == receipt_command.source_event_id)
+    idem_record = (await db.execute(stmt_idem)).scalars().first()
+    if idem_record:
+        idem_record.status = IdempotencyStatus.COMPLETED
+        idem_record.result_summary = {"status": "COMMITTED", "event_id": receipt_command.source_event_id}
+        
+    await db.commit()
+    return {"status": "COMMITTED", "event_id": receipt_command.source_event_id, "transfer_status": result.get("transfer_status")}

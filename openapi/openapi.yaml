@@ -1,0 +1,1261 @@
+openapi: 3.1.0
+info:
+  title: National LMIS Ledger System
+  description: Decoupled Modular Monolith for Supply Chain Accounting
+  version: 1.0.0
+paths:
+  /api/auth/me:
+    get:
+      tags:
+      - Authentication & Identity
+      summary: Get Current User Context
+      description: "Returns the parsed JWT payload (ActorContext) for the current\
+        \ user.\nUsed by the Angular SPA on bootstrap to determine RBAC visibility\
+        \ rules \n(e.g., hiding the 'Admin' tab if they lack 'system_admin' role)."
+      operationId: get_current_user_context_api_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorContext'
+      security:
+      - HTTPBearer: []
+  /api/adapter/inbox:
+    post:
+      tags:
+      - Adapter
+      summary: Receive External Payload
+      description: "Step 1 of the architecture: External systems submit their dirty\
+        \ DHIS2/eLMIS payloads here.\nBecause this is an asynchronous messaging pattern,\
+        \ we return 202 Accepted immediately \nand let the Adapter Worker chew through\
+        \ the payload in the background."
+      operationId: receive_external_payload_api_adapter_inbox_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPayload'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/adapter/admin/contracts:
+    get:
+      tags:
+      - Adapter Admin
+      summary: List Contracts
+      operationId: list_contracts_api_adapter_admin_contracts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Contracts Api Adapter Admin Contracts Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Adapter Admin
+      summary: Create Contract
+      operationId: create_contract_api_adapter_admin_contracts_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/adapter/admin/contracts/{contract_id}/versions/{version}/activate:
+    post:
+      tags:
+      - Adapter Admin
+      summary: Activate Contract
+      description: Implements the 'Atomic Flip' rule.
+      operationId: activate_contract_api_adapter_admin_contracts__contract_id__versions__version__activate_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Contract Id
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/adapter/admin/crosswalks:
+    get:
+      tags:
+      - Adapter Admin
+      summary: List Crosswalks
+      operationId: list_crosswalks_api_adapter_admin_crosswalks_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: namespace
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Namespace
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Crosswalks Api Adapter Admin Crosswalks Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Adapter Admin
+      summary: Create Crosswalk
+      operationId: create_crosswalk_api_adapter_admin_crosswalks_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrosswalkCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/adapter/admin/dlq:
+    get:
+      tags:
+      - Adapter Admin
+      summary: Get Dlq
+      operationId: get_dlq_api_adapter_admin_dlq_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status_filter
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: UNRESOLVED
+          title: Status Filter
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Dlq Api Adapter Admin Dlq Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/adapter/admin/dlq/{id}/retry:
+    post:
+      tags:
+      - Adapter Admin
+      summary: Retry Dlq
+      operationId: retry_dlq_api_adapter_admin_dlq__id__retry_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Id
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/commands:
+    post:
+      tags:
+      - Ledger Core
+      summary: Submit Ledger Command
+      description: 'Internal API Gateway for Ledger operations.
+
+        The Adapter (acting as ''ledger_system'') submits normalized commands here.
+
+        This routes to Area B (Idempotency), Area E (Approval), or Area C/D directly.'
+      operationId: submit_ledger_command_api_ledger_commands_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerCommand'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/ledger/balances:
+    get:
+      tags:
+      - Ledger Core
+      summary: Get Stock Balances
+      description: 'CQRS Read API: Fetches current pre-calculated stock balances.
+
+        Automatically filters results based on the JWT `allowed_nodes` claims.
+
+        Optionally filter to a specific valid node_id.'
+      operationId: get_stock_balances_api_ledger_balances_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockBalanceResponse'
+                title: Response Get Stock Balances Api Ledger Balances Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/history/{node_id}/{item_id}:
+    get:
+      tags:
+      - Ledger Core
+      summary: Get Inventory History
+      description: 'CQRS Read API: Fetches the immutable event log explaining how
+        a balance arrived at its current state.
+
+        Strictly asserts the actor has access to the requested `node_id`.'
+      operationId: get_inventory_history_api_ledger_history__node_id___item_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Node Id
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Item Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LedgerHistoryResponse'
+                title: Response Get Inventory History Api Ledger History  Node Id   Item
+                  Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/transfers:
+    get:
+      tags:
+      - Ledger Core
+      summary: List Transfers
+      description: 'CQRS Read API: Fetches pending incoming/outgoing transfers.
+
+        Automatically filters results based on the JWT `allowed_nodes` claims.'
+      operationId: list_transfers_api_ledger_transfers_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InTransitTransferResponse'
+                title: Response List Transfers Api Ledger Transfers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/transfers/{transfer_id}/receive:
+    post:
+      tags:
+      - Ledger Core
+      summary: Receive Transfer
+      description: UI Endpoint to mark a dispatched transfer as received.
+      operationId: receive_transfer_api_ledger_transfers__transfer_id__receive_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: transfer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Transfer Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveTransferRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/gatekeeper/staged:
+    get:
+      tags:
+      - Ledger Gatekeeper
+      summary: List Staged Commands
+      description: List transactions awaiting approval for the actor's allowed nodes.
+      operationId: list_staged_commands_api_ledger_gatekeeper_staged_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/ledger/gatekeeper/{staged_id}/resolve:
+    post:
+      tags:
+      - Ledger Gatekeeper
+      summary: Resolve Staged Command
+      description: UI Endpoint for Supervisors to Approve or Reject transactions.
+      operationId: resolve_staged_command_api_ledger_gatekeeper__staged_id__resolve_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: staged_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Staged Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalActionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/kernel/commodities:
+    get:
+      tags:
+      - Shared Kernel
+      summary: List Commodities
+      operationId: list_commodities_api_kernel_commodities_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Commodities Api Kernel Commodities Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Shared Kernel
+      summary: Create Commodity
+      operationId: create_commodity_api_kernel_commodities_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/kernel/policies:
+    post:
+      tags:
+      - Shared Kernel
+      summary: Create Or Update Policy
+      operationId: create_or_update_policy_api_kernel_policies_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/kernel/nodes:
+    get:
+      tags:
+      - Shared Kernel
+      summary: List Nodes
+      operationId: list_nodes_api_kernel_nodes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Nodes Api Kernel Nodes Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Shared Kernel
+      summary: Create Node
+      operationId: create_node_api_kernel_nodes_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/kernel/nodes/resolve:
+    post:
+      tags:
+      - Shared Kernel
+      summary: Resolve Nodes
+      description: 'Efficiently resolves a list of Node UUIDs to their human-readable
+        names.
+
+        Ignores historical topology splits, just gets the name of the active record
+
+        (or the latest record if deactivated).'
+      operationId: resolve_nodes_api_kernel_nodes_resolve_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeResolveRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Resolve Nodes Api Kernel Nodes Resolve Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/kernel/nodes/all:
+    get:
+      tags:
+      - Shared Kernel
+      summary: List All Nodes Historical
+      operationId: list_all_nodes_historical_api_kernel_nodes_all_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List All Nodes Historical Api Kernel Nodes All Get
+      security:
+      - HTTPBearer: []
+  /api/kernel/nodes/{node_id}:
+    put:
+      tags:
+      - Shared Kernel
+      summary: Update Node
+      description: 'SCD Type 2: Modifying a node (e.g., Parent ID changes) caps the
+        ''valid_to'' of the current record
+
+        and inserts a new clone with the updated values. Never UPDATE an existing
+        parent_id.'
+      operationId: update_node_api_kernel_nodes__node_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/kernel/nodes/{node_id}/topology-correction:
+    post:
+      tags:
+      - Shared Kernel
+      summary: Historical Topology Correction
+      description: "SCD Type 2 Historical Rewrite: \nFinds the active record at the\
+        \ `effective_date`, caps its `valid_to`, \nand inserts a new record with the\
+        \ new `parent_id` spanning `effective_date` \nto the original `valid_to` (which\
+        \ could be NULL or a bounded date if another split exists)."
+      operationId: historical_topology_correction_api_kernel_nodes__node_id__topology_correction_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeTopologyCorrection'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health:
+    get:
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    ActorContext:
+      properties:
+        actor_id:
+          type: string
+          title: Actor Id
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
+        allowed_nodes:
+          items:
+            type: string
+          type: array
+          title: Allowed Nodes
+      type: object
+      required:
+      - actor_id
+      - roles
+      - allowed_nodes
+      title: ActorContext
+      description: 'The stateless identity & access object extracted from the JWT.
+
+        Passed down into Domain Services so they don''t depend on HTTP request objects.'
+    ApprovalActionRequest:
+      properties:
+        action:
+          type: string
+          title: Action
+          description: APPROVE or REJECT
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+          description: Optional notes for the decision.
+      type: object
+      required:
+      - action
+      title: ApprovalActionRequest
+      description: Strict schema for the UI to submit an approval action
+    CommodityCreate:
+      properties:
+        item_id:
+          type: string
+          title: Item Id
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        base_unit:
+          type: string
+          title: Base Unit
+      type: object
+      required:
+      - item_id
+      - code
+      - name
+      - base_unit
+      title: CommodityCreate
+    ContractCreate:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: string
+          title: Version
+        dsl_config:
+          additionalProperties: true
+          type: object
+          title: Dsl Config
+      type: object
+      required:
+      - id
+      - version
+      - dsl_config
+      title: ContractCreate
+    CrosswalkCreate:
+      properties:
+        namespace:
+          type: string
+          title: Namespace
+        source_value:
+          type: string
+          title: Source Value
+        internal_id:
+          type: string
+          title: Internal Id
+        metadata_json:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metadata Json
+      type: object
+      required:
+      - namespace
+      - source_value
+      - internal_id
+      title: CrosswalkCreate
+    ExternalPayload:
+      properties:
+        source_system:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source System
+        mapping_profile:
+          type: string
+          title: Mapping Profile
+        source_event_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Event Id
+        dry_run:
+          type: boolean
+          title: Dry Run
+          default: false
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+      type: object
+      required:
+      - mapping_profile
+      - payload
+      title: ExternalPayload
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    InTransitStatus:
+      type: string
+      enum:
+      - OPEN
+      - PARTIAL
+      - COMPLETED
+      - STALE_AUTO_CLOSED
+      - FAILED_AUTO_CLOSE
+      - LOST
+      title: InTransitStatus
+    InTransitTransferResponse:
+      properties:
+        transfer_id:
+          type: string
+          format: uuid
+          title: Transfer Id
+        source_node_id:
+          type: string
+          title: Source Node Id
+        dest_node_id:
+          type: string
+          title: Dest Node Id
+        item_id:
+          type: string
+          title: Item Id
+        qty_shipped:
+          type: integer
+          title: Qty Shipped
+        qty_received:
+          type: integer
+          title: Qty Received
+        status:
+          $ref: '#/components/schemas/InTransitStatus'
+        dispatched_at:
+          type: string
+          format: date-time
+          title: Dispatched At
+        auto_close_after:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Auto Close After
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - transfer_id
+      - source_node_id
+      - dest_node_id
+      - item_id
+      - qty_shipped
+      - qty_received
+      - status
+      - dispatched_at
+      - created_at
+      - updated_at
+      title: InTransitTransferResponse
+      description: Data Transfer Object representing an active or completed In-Transit
+        shipment.
+    LedgerCommand:
+      properties:
+        source_event_id:
+          type: string
+          title: Source Event Id
+          description: The unique ID from the source (e.g., ODK InstanceID).
+        version_timestamp:
+          type: integer
+          title: Version Timestamp
+          description: Timestamp acting as version for edits/reversals.
+        transaction_type:
+          $ref: '#/components/schemas/TransactionType'
+        node_id:
+          type: string
+          title: Node Id
+          description: Internal ID of the facility or MU
+        item_id:
+          type: string
+          title: Item Id
+          description: Internal ID of the commodity (Shared Kernel)
+        quantity:
+          type: integer
+          title: Quantity
+          description: The delta. Always in Base Units.
+        transfer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Transfer Id
+          description: Links a receipt to a specific dispatch.
+        batch_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Batch Id
+          description: For tracking specific lots/batches.
+        expiry_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expiry Date
+          description: Essential for FEFO logic.
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+          description: The 'Business Time' (when it happened in the field).
+        metadata:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metadata
+          description: 'Contextual info (e.g., ''Reason: Damaged in transit'').'
+      type: object
+      required:
+      - source_event_id
+      - version_timestamp
+      - transaction_type
+      - node_id
+      - item_id
+      - quantity
+      - occurred_at
+      title: LedgerCommand
+    LedgerHistoryResponse:
+      properties:
+        source_event_id:
+          type: string
+          title: Source Event Id
+        transaction_type:
+          type: string
+          title: Transaction Type
+        node_id:
+          type: string
+          title: Node Id
+        item_id:
+          type: string
+          title: Item Id
+        quantity:
+          type: integer
+          title: Quantity
+        running_balance:
+          type: integer
+          title: Running Balance
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+      type: object
+      required:
+      - source_event_id
+      - transaction_type
+      - node_id
+      - item_id
+      - quantity
+      - running_balance
+      - occurred_at
+      title: LedgerHistoryResponse
+      description: View model for the immutable audit log underlying the balances
+    NodeCreate:
+      properties:
+        node_id:
+          type: string
+          title: Node Id
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        node_type:
+          type: string
+          title: Node Type
+        parent_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Parent Id
+        meta_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Meta Data
+      type: object
+      required:
+      - node_id
+      - code
+      - name
+      - node_type
+      title: NodeCreate
+    NodeResolveRequest:
+      properties:
+        node_ids:
+          items:
+            type: string
+          type: array
+          title: Node Ids
+      type: object
+      required:
+      - node_ids
+      title: NodeResolveRequest
+    NodeTopologyCorrection:
+      properties:
+        new_parent_id:
+          type: string
+          title: New Parent Id
+        effective_date:
+          type: string
+          format: date
+          title: Effective Date
+      type: object
+      required:
+      - new_parent_id
+      - effective_date
+      title: NodeTopologyCorrection
+    NodeUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        node_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Node Type
+        parent_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Parent Id
+        meta_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Meta Data
+      type: object
+      title: NodeUpdate
+    PolicyCreate:
+      properties:
+        policy_key:
+          type: string
+          title: Policy Key
+        applies_to_node:
+          type: string
+          title: Applies To Node
+          default: GLOBAL
+        applies_to_item:
+          type: string
+          title: Applies To Item
+          default: ALL
+        config:
+          additionalProperties: true
+          type: object
+          title: Config
+      type: object
+      required:
+      - policy_key
+      - config
+      title: PolicyCreate
+    ReceiveTransferRequest:
+      properties:
+        qty_received:
+          type: integer
+          title: Qty Received
+        node_id:
+          type: string
+          title: Node Id
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        source_event_id:
+          type: string
+          title: Source Event Id
+      type: object
+      required:
+      - qty_received
+      - node_id
+      - occurred_at
+      - source_event_id
+      title: ReceiveTransferRequest
+      description: Payload for completing an In-Transit receipt from the UI.
+    StockBalanceResponse:
+      properties:
+        node_id:
+          type: string
+          title: Node Id
+        item_id:
+          type: string
+          title: Item Id
+        quantity:
+          type: integer
+          title: Quantity
+        last_updated:
+          type: string
+          format: date-time
+          title: Last Updated
+      type: object
+      required:
+      - node_id
+      - item_id
+      - quantity
+      - last_updated
+      title: StockBalanceResponse
+      description: View model for the current pre-calculated stock projection
+    TransactionType:
+      type: string
+      enum:
+      - RECEIPT
+      - ISSUE
+      - TRANSFER
+      - ADJUSTMENT
+      - STOCK_COUNT
+      - REVERSAL
+      - LOSS_IN_TRANSIT
+      title: TransactionType
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

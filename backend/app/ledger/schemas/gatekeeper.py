@@ -12,6 +12,11 @@ class SupervisorActionPayload(BaseModel):
     action: ApprovalActionType
     comment: Optional[str] = Field(None, description="Reason for rejection or approval notes.")
 
+class ApprovalActionRequest(BaseModel):
+    """Strict schema for the UI to submit an approval action"""
+    action: str = Field(..., description="APPROVE or REJECT")
+    comment: Optional[str] = Field(None, description="Optional notes for the decision.")
+
 class StagedCommandResponse(BaseModel):
     """Response returned to the UI to build the 'Tasks Awaiting Review' dashboard"""
     id: UUID

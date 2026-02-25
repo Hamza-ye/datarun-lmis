@@ -150,3 +150,31 @@ async def get_dlq(
     dlqs = result.scalars().all()
     # Simplified return for MVP
     return [{"id": str(d.id), "inbox_id": str(d.inbox_id), "error_reason": d.error_reason, "status": d.status} for d in dlqs]
+
+@router.post("/dlq/{id}/retry", status_code=status.HTTP_202_ACCEPTED)
+async def retry_dlq(
+    id: UUID,
+    actor: ActorContext = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    actor.require_role("system_admin")
+    
+    # Fetch DLQ
+    stmt = select(DeadLetterQueue).where(DeadLetterQueue.id == id, DeadLetterQueue.status == "UNRESOLVED")
+    dlq_record = (await db.execute(stmt)).scalars().first()
+    if not dlq_record:
+        raise HTTPException(status_code=404, detail="Unresolved DLQ entry not found")
+        
+    from app.adapter.models.engine import AdapterInbox
+    # Fetch associated Inbox
+    stmt_inbox = select(AdapterInbox).where(AdapterInbox.id == dlq_record.inbox_id)
+    inbox_record = (await db.execute(stmt_inbox)).scalars().first()
+    if not inbox_record:
+        raise HTTPException(status_code=404, detail="Associated Inbox record not found")
+        
+    # Reset status
+    inbox_record.status = InboxStatus.RECEIVED
+    dlq_record.status = "REPROCESSED"
+    await db.commit()
+    
+    return {"message": "Payload queued for retry", "inbox_id": str(inbox_record.id)}
