@@ -24,6 +24,10 @@
     color: var(--color-text-muted);
 }
 
+.text-danger {
+    color: var(--color-danger);
+}
+
 .py-8 {
     padding-top: 2rem;
     padding-bottom: 2rem;
@@ -38,7 +42,7 @@
 }
 
 .mt-4 {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
 }
 
 .p-2 {
@@ -55,9 +59,10 @@
 
 .bg-dark {
     background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
+    border-radius: 8px;
     overflow-x: auto;
     white-space: pre-wrap;
+    border: 1px solid var(--color-glass-border);
 }
 
 .glass-input {
@@ -76,19 +81,129 @@
         border-color: var(--color-primary);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
-}
 
-.action-form {
-    label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-muted);
+    &.textarea {
+        resize: vertical;
+        min-height: 80px;
     }
 }
 
-.button-group {
+/* 
+ * Sliding Drawer Styles 
+ */
+.drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.drawer-panel {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    /* Hidden offscreen by default */
+    width: 500px;
+    height: 100vh;
+    z-index: 1010;
+    border-radius: 16px 0 0 16px;
+    overflow-y: auto;
+    transition: right var(--transition-spring);
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    padding: 2rem;
+    box-shadow: -10px 0 25px rgba(0, 0, 0, 0.1);
+
+    &.open {
+        right: 0;
+        /* Slide in */
+    }
+
+    .drawer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--color-glass-border);
+        padding-bottom: 1rem;
+
+        h3 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.25rem;
+            color: var(--color-text-main);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--color-text-muted);
+            transition: color var(--transition-spring);
+
+            &:hover {
+                color: var(--color-danger);
+            }
+        }
+    }
+
+    .drawer-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .info-group {
+            margin-bottom: 1rem;
+
+            label {
+                display: block;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--color-text-muted);
+                margin-bottom: 0.25rem;
+                font-weight: 600;
+            }
+
+            p {
+                margin: 0;
+                font-size: 1rem;
+                font-weight: 500;
+            }
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-text-main);
+        }
+    }
+
+    .drawer-footer {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--color-glass-border);
+
+        button {
+            flex: 1;
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }

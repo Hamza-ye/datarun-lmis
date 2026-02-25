@@ -1,0 +1,43 @@
+.contracts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-main);
+    }
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.py-8 {
+    padding: 2rem 0;
+}
+
+.font-mono {
+    font-family: monospace;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}

@@ -1,0 +1,89 @@
+<aside class="glass-sidebar glass-panel">
+    <div class="sidebar-header">
+        <span class="logo-icon text-2xl">📦</span>
+        <h2>National LMIS</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+        <!-- Section 1: Standard Operational Reality -->
+        <div class="nav-section-title">Ledger</div>
+
+        <a routerLink="/ledger/balances" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">📊</span>
+            <span class="link-text">Stock Balances</span>
+        </a>
+
+        <a routerLink="/kernel/nodes" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🏥</span>
+            <span class="link-text">Node Hierarchy</span>
+        </a>
+
+        <a routerLink="/kernel/commodities" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">💊</span>
+            <span class="link-text">Commodities</span>
+        </a>
+
+        <a routerLink="/ledger/transfers" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🚚</span>
+            <span class="link-text">Active Transfers</span>
+        </a>
+
+        <!-- Section 2: Audit & Accountability -->
+        <div class="nav-section-title">Audit Trail</div>
+
+        <a routerLink="/ledger/history" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🕒</span>
+            <span class="link-text">Transaction History</span>
+        </a>
+
+        <!-- Admin Functions Segment -->
+        @if (actor(); as currentActor) {
+
+        @if (currentActor.roles.includes('system_admin') || currentActor.roles.includes('ledger_supervisor')) {
+        <!-- Section 3: Privileged Ledger Writes -->
+        <div class="nav-section-title text-warning">Ledger Operations</div>
+
+        <a routerLink="/ledger/staged-inbox" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🛡️</span>
+            <span class="link-text">Gatekeeper Inbox</span>
+        </a>
+
+        <a routerLink="/ledger/loss-resolution" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">⚠️</span>
+            <span class="link-text">Loss Resolution</span>
+        </a>
+        }
+
+        @if (currentActor.roles.includes('system_admin')) {
+        <!-- Section 4: Pure Admin Config & Unstructured Integration Data -->
+        <div class="nav-section-title text-danger">Adapter Administration</div>
+
+        <a routerLink="/adapter/admin/dlq" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">📥</span>
+            <span class="link-text">DLQ Management</span>
+        </a>
+
+        <a routerLink="/adapter/admin/contracts" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">📜</span>
+            <span class="link-text">Mapping Contracts</span>
+        </a>
+
+        <a routerLink="/adapter/admin/crosswalks" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🔗</span>
+            <span class="link-text">Crosswalk Dictionaries</span>
+        </a>
+
+        <a routerLink="/adapter/inbox" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">📩</span>
+            <span class="link-text">Adapter Inbox Simulator</span>
+        </a>
+
+        <a routerLink="/kernel/topology" routerLinkActive="active-link" class="nav-link">
+            <span class="link-icon">🔄</span>
+            <span class="link-text">Topology Corrections</span>
+        </a>
+        }
+
+        }
+    </nav>
+</aside>

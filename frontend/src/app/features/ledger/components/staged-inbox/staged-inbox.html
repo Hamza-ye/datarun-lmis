@@ -37,7 +37,7 @@
             } @empty {
             <tr>
                 <td colspan="6" class="text-center text-muted py-8">
-                    No staged commands awaiting your review.
+                    No staged commands awaiting your review. Happy zero-inbox!
                 </td>
             </tr>
             }
@@ -45,25 +45,53 @@
     </table>
     }
 
-    <!-- Inline Review Panel -->
-    @if (selectedItem(); as selected) {
-    <div class="glass-panel review-panel mt-4">
-        <h3>Review Command: {{ selected.source_event_id }}</h3>
-        <div class="payload-preview font-mono text-sm bg-dark p-2 mt-2">
-            {{ selected.payload | json }}
+    <!-- Sliding Right-Side Drawer Overlay -->
+    @if (selectedItem()) {
+    <div class="drawer-backdrop" (click)="selectedItem.set(null)"></div>
+    }
+
+    <div class="drawer-panel glass-panel" [class.open]="!!selectedItem()">
+        @if (selectedItem(); as selected) {
+        <div class="drawer-header">
+            <div>
+                <h3>Review Transaction</h3>
+                <span class="text-muted text-sm font-mono">{{ selected.source_event_id }}</span>
+            </div>
+            <button class="close-btn" (click)="selectedItem.set(null)">✕</button>
         </div>
 
-        <div class="action-form mt-4">
-            <label>Review Comment (Optional)</label>
-            <input type="text" [ngModel]="approvalComment()" (ngModelChange)="approvalComment.set($event)"
-                class="glass-input" placeholder="Enter reason for rejection or approval notes...">
+        <div class="drawer-content">
+            <div class="info-group">
+                <label>Facility Node</label>
+                <p>{{ selected.node_id | nodeName }} ({{ selected.node_id }})</p>
+            </div>
+            <div class="info-group">
+                <label>Command Type</label>
+                <p><span class="badge badge-warning">{{ selected.command_type }}</span></p>
+            </div>
+            <div class="info-group">
+                <label>System Reason Staged</label>
+                <p class="text-danger">{{ selected.stage_reason }}</p>
+            </div>
 
-            <div class="button-group mt-3">
-                <button class="btn btn-success" (click)="resolveItem('APPROVE')">✓ Approve Transaction</button>
-                <button class="btn btn-danger" (click)="resolveItem('REJECT')">✕ Reject Transaction</button>
-                <button class="btn btn-glass" (click)="selectedItem.set(null)">Cancel</button>
+            <label class="mt-4">Normalized Payload</label>
+            <div class="payload-preview font-mono text-sm bg-dark p-2 mt-2">
+                {{ selected.payload | json }}
+            </div>
+
+            <div class="action-form mt-4">
+                <label>Supervisor Review Comment (Required for Rejection)</label>
+                <textarea [ngModel]="approvalComment()" (ngModelChange)="approvalComment.set($event)"
+                    class="glass-input textarea" placeholder="Enter reason for rejection or approval notes..."
+                    rows="3"></textarea>
             </div>
         </div>
+
+        <div class="drawer-footer mt-4">
+            <button class="btn btn-success" (click)="resolveItem('APPROVE')">✓ Approve</button>
+            <button class="btn btn-danger" (click)="resolveItem('REJECT')">✕ Reject</button>
+            <button class="btn btn-glass" (click)="selectedItem.set(null)">Cancel</button>
+        </div>
+        }
     </div>
-    }
 </div>

@@ -1,0 +1,14 @@
+<header class="glass-topbar glass-panel">
+    <h1 class="page-title">Malaria Commodity Ledger</h1>
+
+    <div class="spacer"></div>
+
+    @if (actor(); as currentActor) {
+    <div class="user-badge glass-panel">
+        <span class="user-id">{{ currentActor.actor_id }}</span>
+        @for (role of currentActor.roles; track role) {
+        <span class="role-badge badge-success badge">{{ role }}</span>
+        }
+    </div>
+    }
+</header>

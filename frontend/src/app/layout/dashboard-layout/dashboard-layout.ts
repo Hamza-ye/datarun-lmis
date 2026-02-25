@@ -5,13 +5,18 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { TopologyService } from '../../core/services/topology.service';
 
+import { Sidebar } from '../sidebar/sidebar';
+import { Header } from '../header/header';
+
 @Component({
   selector: 'app-dashboard-layout',
   standalone: true,
   imports: [
     CommonModule,
     RouterOutlet,
-    RouterModule
+    RouterModule,
+    Sidebar,
+    Header
   ],
   templateUrl: './dashboard-layout.html',
   styleUrls: ['./dashboard-layout.scss']

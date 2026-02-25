@@ -41,9 +41,15 @@ async def submit_ledger_command(
         return {"status": "IGNORED", "message": idem_result.reason, "existing_summary": idem_result.existing_summary}
         
     elif idem_result.action == "REVERSE_AND_PROCEED":
-        # In a full system, we would enqueue a reversal command here before proceeding.
-        # For simplicity, we just log it and proceed with the new command as a forward-correction.
-        pass
+        # Create a Reversal Command (Symmetry of Governance)
+        reversal_command = command.model_copy(deep=True)
+        reversal_command.quantity = -command.quantity # Invert the quantity
+        reversal_command.source_event_id = f"REV-{command.source_event_id}"
+        
+        # Immediately stage the Reversal for Supervisor Approval because it alters history
+        await GatekeeperService.stage_command(db, reversal_command, "Symmetry of Governance: Reversal of modified transaction")
+        await db.commit()
+        return {"status": "STAGED", "message": "Reversal of prior transaction requires manual approval before proceeding."}
 
     # Dummy Threshold Policy (Normally resolving via Area F PolicyResolver)
     requires_approval = command.quantity >= 1000 or command.transaction_type == TransactionType.ADJUSTMENT

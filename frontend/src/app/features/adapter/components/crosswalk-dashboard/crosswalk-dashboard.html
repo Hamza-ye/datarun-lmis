@@ -1,0 +1,73 @@
+<div class="crosswalk-container">
+    <div class="header-actions">
+        <h2>Crosswalk Dictionaries</h2>
+        <div class="btn-group">
+            <button class="btn btn-primary" (click)="showForm.set(!showForm())">
+                {{ showForm() ? 'Cancel' : 'Add New Crosswalk' }}
+            </button>
+            <button class="btn btn-glass" (click)="loadCrosswalks()">↻</button>
+        </div>
+    </div>
+
+    @if (showForm()) {
+    <div class="glass-panel form-panel">
+        <h3>Create New Identifier Mapping</h3>
+        <p class="text-muted text-sm mb-4">Translates external sender IDs into internal LMIS node names.</p>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Namespace (Integration Partner)</label>
+                <input type="text" class="glass-input" placeholder="e.g. DHIS2" [ngModel]="newNamespace()"
+                    (ngModelChange)="newNamespace.set($event)">
+            </div>
+
+            <div class="form-group">
+                <label>Source Value (External ID)</label>
+                <input type="text" class="glass-input" placeholder="e.g. facility_abc" [ngModel]="newSourceValue()"
+                    (ngModelChange)="newSourceValue.set($event)">
+            </div>
+
+            <div class="form-group">
+                <label>Internal ID (LMIS Node)</label>
+                <input type="text" class="glass-input" placeholder="e.g. CLINIC_1" [ngModel]="newInternalId()"
+                    (ngModelChange)="newInternalId.set($event)">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-primary mt-4" (click)="submitCrosswalk()">Save Crosswalk Mapping</button>
+        </div>
+    </div>
+    }
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center py-8 text-muted">Loading crosswalks...</div>
+    } @else {
+    <div class="glass-panel">
+        <table class="glass-table">
+            <thead>
+                <tr>
+                    <th>Namespace</th>
+                    <th>Source Value (External)</th>
+                    <th>Internal ID (LMIS)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (cw of crosswalks(); track cw.namespace + cw.source_value) {
+                <tr>
+                    <td><span class="badge badge-success">{{ cw.namespace }}</span></td>
+                    <td class="font-mono text-sm">{{ cw.source_value }}</td>
+                    <td class="font-mono text-sm">{{ cw.internal_id }}</td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-8">
+                        No crosswalks found.
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+</div>

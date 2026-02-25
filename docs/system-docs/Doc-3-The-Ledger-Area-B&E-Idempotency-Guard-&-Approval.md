@@ -79,8 +79,7 @@ A critical edge case involves edits to forms that generated commands which were 
 1. **Detection:** Area B detects an incoming `source_event_id` with a newer `version_timestamp`.
 2. **Generation:** Area B generates a `REVERSAL` command for the old state, and a new command for the new state.
 3. **The Gatekeeper Check:**
-   * If the *original* command bypassed Area E, the `REVERSAL` bypasses Area E.
-   * If the *original* command required Area E approval (and was approved), the `REVERSAL` command is **immediately parked** in `ledger_staged_commands`.
+   * Regardless of the original command's threshold, the `REVERSAL` command is **immediately parked** in `ledger_staged_commands` with the reason "Symmetry of Governance: Reversal of modified transaction". Altering the immutable event history is a strictly privileged action.
 4. **Resolution:** A supervisor must approve the "Undo" action before Area C actually removes the original units from the balance.
 
 ### Summary of Success Criteria

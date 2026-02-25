@@ -1,0 +1,55 @@
+<div class="contracts-container">
+    <div class="header-actions">
+        <h2>Mapping Contracts</h2>
+        <button class="btn btn-primary" (click)="loadContracts()">↻ Refresh</button>
+    </div>
+
+    @if (isLoading()) {
+    <div class="glass-panel text-center py-8 text-muted">Loading contracts...</div>
+    } @else {
+    <div class="glass-panel">
+        <table class="glass-table">
+            <thead>
+                <tr>
+                    <th>Contract ID</th>
+                    <th>Version</th>
+                    <th>Created At</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (contract of contracts(); track contract.id + contract.version) {
+                <tr>
+                    <td class="font-mono text-sm">{{ contract.id }}</td>
+                    <td class="font-mono text-sm">{{ contract.version }}</td>
+                    <td class="text-muted text-sm">{{ contract.created_at | date:'short' }}</td>
+                    <td>
+                        <span class="badge" [class.badge-success]="contract.status === 'ACTIVE'"
+                            [class.badge-warning]="contract.status === 'DRAFT'"
+                            [class.bg-dark]="contract.status === 'DEPRECATED'">
+                            {{ contract.status }}
+                        </span>
+                    </td>
+                    <td>
+                        @if (contract.status !== 'ACTIVE') {
+                        <button class="btn btn-primary btn-sm" (click)="activateVersion(contract.id, contract.version)">
+                            Activate
+                        </button>
+                        } @else {
+                        <span class="text-muted text-sm border-0">Currently Active</span>
+                        }
+                    </td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-8">
+                        No contracts found.
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+</div>

@@ -10,6 +10,8 @@ import { LossResolutionWizard } from './features/ledger/components/loss-resoluti
 import { DlqDashboard } from './features/adapter/components/dlq-dashboard/dlq-dashboard';
 import { StagedInbox } from './features/ledger/components/staged-inbox/staged-inbox';
 import { TransfersList } from './features/ledger/components/transfers-list/transfers-list';
+import { ContractDashboard } from './features/adapter/components/contract-dashboard/contract-dashboard';
+import { CrosswalkDashboard } from './features/adapter/components/crosswalk-dashboard/crosswalk-dashboard';
 
 export const routes: Routes = [
     {
@@ -25,6 +27,8 @@ export const routes: Routes = [
             { path: 'kernel/commodities', component: CommodityDictionary },
             { path: 'adapter/inbox', component: InboxForm },
             { path: 'adapter/admin/dlq', component: DlqDashboard },
+            { path: 'adapter/admin/contracts', component: ContractDashboard },
+            { path: 'adapter/admin/crosswalks', component: CrosswalkDashboard },
             { path: 'kernel/topology', component: TopologyWizard },
             { path: 'ledger/loss-resolution', component: LossResolutionWizard }
         ]

@@ -1,0 +1,31 @@
+.glass-topbar {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    height: 72px;
+
+    .page-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--color-text-main);
+    }
+
+    .spacer {
+        flex: 1;
+    }
+
+    .user-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px; // Pill shape
+        font-size: 0.875rem;
+        box-shadow: none;
+
+        .user-id {
+            font-weight: 600;
+        }
+    }
+}
