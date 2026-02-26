@@ -28,24 +28,21 @@ The Ledger knows absolutely nothing about `PARAM-BOX-50`.
 
 ---
 
-### The Error Correction Loop (The User's Job, High level pesudo)
+### The Error Correction Loop (The Unified Inbox Replay)
 
-Because they are perfectly decoupled, the adapter relies on **Contracts and Dead Letter Queues (DLQs)**. Here is the exact flow you described:
+Because they are perfectly decoupled, the adapter relies on **Contracts and a Unified DLQ State**. Here is the exact flow you described:
 
 1. **The Mistake:** A new clinic uses a new app version and sends a code the Adapter has never seen: `PARAM-BOX-200`.
 2. **Adapter Tries its Best:** The Adapter checks its internal crosswalk. It doesn't find `PARAM-BOX-200`.
-3. **Adapter Fallback:** Based on your config (`"on_unmapped": "PASS_THROUGH"`), the Adapter shrugs, skips the math pipeline, and sends `{ "item_id": "PARAM-BOX-200", "quantity": 1 }` to the Ledger.
-4. **Ledger Rejects:** The Ledger looks up `PARAM-BOX-200` in its own `commodity_registry`. It doesn't exist. The Ledger immediately responds to the HTTP request with:
-`400 Bad Request: "Unknown item_id: PARAM-BOX-200"`.
-5. **Adapter Logs It:** The Adapter catches the `400 Bad Request`. It writes the original payload and the Ledger's error message into the Adapter's Error Log / Dead Letter Queue.
-6. **The User Fixes It:** * The system administrator checks the Adapter's Error Log.
-* They see the Ledger rejected `PARAM-BOX-200`.
-* They open the Adapter's mapping config.
-* They add a new crosswalk rule: `PARAM-BOX-200`  `PARAM-01` (Transform Factor: 200).
-* They click **"Replay Failed Message"** in the Adapter.
-
-
-7. **Success:** The Adapter processes it again. This time it does the math, sends `{ "item_id": "PARAM-01", "quantity": 200 }`, and the Ledger responds `201 Created`.
+3. **Adapter Fallback:** Based on your config (`"on_unmapped": "DLQ"`), the Adapter stops the pipeline. It marks the original `adapter_inbox` row as `DLQ` and saves the error reason (e.g., "Missing Crosswalk").
+4. **The User Fixes It:** 
+   * The system administrator checks the Adapter's DLQ View (querying `adapter_inbox` for `status=DLQ`).
+   * They see the Ledger rejected `PARAM-BOX-200`.
+   * They open the Adapter's mapping config.
+   * They add a new crosswalk rule: `PARAM-BOX-200` -> `PARAM-01` (Transform Factor: 200).
+   * They click **"Replay Failed Message"** in the Adapter UI.
+5. **The Replay:** The system creates a *new* row in `adapter_inbox` containing the payload, links it to the failed attempt via `parent_inbox_id`, and sets the status to `RECEIVED`. The asynchronous worker picks it up exactly as if it were a brand-new message.
+6. **Success:** The Adapter processes it again. This time it does the math, sends `{ "item_id": "PARAM-01", "quantity": 200 }`, and the Ledger responds `201 Created`. The new Inbox row is marked `FORWARDED`.
 
 ---
 
@@ -262,9 +259,12 @@ To prevent data loss when downstream systems are down, or when mapping rules are
 | Column | Type | Description |
 | --- | --- | --- |
 | `id` | UUID | Primary Key (Internal Inbox ID). |
+| `correlation_id` | UUID | Groups logical retries together. |
+| `parent_inbox_id` | UUID | Points to a previous failed attempt (if this is a replay). |
 | `source_system` | String | e.g., `commcare_mobile`. |
 | `payload` | JSONB | The exact bits submitted by the external app. |
-| `status` | Enum | `RECEIVED`, `MAPPED`, `FORWARDED`, `DLQ`, `ERROR`. |
+| `status` | Enum | `RECEIVED`, `PROCESSING`, `MAPPED`, `FORWARDED`, `DLQ`, `ERROR`, `REPROCESSED`. |
+| `error_message` | String | Why it failed (if status is DLQ or ERROR). |
 | `created_at` | Timestamp | When the payload hit the API. |
 | `updated_at` | Timestamp | Last status change. |
 
@@ -289,23 +289,17 @@ This table acts as the "External Dictionary" mentioned in your JSON contract. It
 
 ---
 
-### 3. The Dead Letter Queue (DLQ) Strategy
+### 3. The Unified Inbox Strategy (Replacing the DLQ Table)
 
-In professional systems, we assume **something will break.** The DLQ is where "Invalid" or "Unmapped" payloads go to wait for human intervention without blocking the rest of the queue (as outlined in the **Error Correction Loop** earlier).
+In professional systems, we assume **something will break.** Instead of moving failed items to a separate `dead_letter_queue` table (which complicates tracking and requires joining data), the Adapter relies on a Unified Inbox with partial indexing.
 
-**Table Name:** `dead_letter_queue`
+When an item fails mapping, its status in `adapter_inbox` changes to `DLQ` and the `error_message` is recorded. 
 
-| Column | Type | Description |
-| --- | --- | --- |
-| `id` | UUID | Primary Key. |
-| `inbox_id` | UUID | Link to the original payload in `adapter_inbox`. |
-| `source_system` | String | From where the payload originated. |
-| `error_reason` | String | Description of the error. |
-| `context_data` | JSONB | Supplementary error info (e.g. stack trace or metadata). |
-| `status` | String | `UNRESOLVED`, `REPROCESSED`, `DISCARDED`. |
-| `created_at` | Timestamp | When the record entered DLQ. |
-
----
+**How the Worker Stays Fast:**
+The background worker continually queries `SELECT * FROM adapter_inbox WHERE status = 'RECEIVED' FOR UPDATE SKIP LOCKED`.
+To prevent this query from slowing down when the table reaches millions of rows (forwarded or failed), Postgres maintains a **Partial Index**:
+`CREATE INDEX idx_inbox_pending ON adapter_inbox (status) WHERE status IN ('RECEIVED', 'RETRY');`
+This guarantees sub-millisecond polling because the database only scans the tiny index of active items.
 
 ### 3.5 The Mapping Contracts
 
@@ -394,7 +388,6 @@ When an admin reprocesses 500 records from the DLQ, you need a record of that **
 To be "Production Grade", the Adapter module is an isolated, async engine that owns:
 
 1. **The Policies:** `mapping_contracts` (The Rules & Destination URLs).
-2. **The Inbox:** `adapter_inbox` (The Async "Store-and-Forward" Buffer).
+2. **The Unified Inbox:** `adapter_inbox` (The Async "Store-and-Forward" Buffer & The Dead Letter State Machine).
 3. **The Crosswalk:** `adapter_crosswalks` (The Dictionary).
-4. **The Hospital:** `dead_letter_queue` (For unmapped or failed data).
-5. **The History:** `adapter_logs` (The immutable record of mapping and forwarding).
+4. **The History:** `adapter_logs` (The immutable partitioned record of mapping and forwarding).
