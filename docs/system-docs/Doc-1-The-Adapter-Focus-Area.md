@@ -337,17 +337,20 @@ Every time the Adapter attempts to map and forward a payload, it leaves a "bread
 
 ---
 
-### 5. Advanced Dead Letter Management (Replay State Machine)
+### 5. Advanced Dead Letter Management (Replay Logic)
 
-As outlined in the "Error Correction Loop" above, when an admin "fixes" a mapping in the DLQ, they need a safe way to test it. This relies on the Adapter injecting the `dry_run` flag defined in the configuration. The Adapter doesn't care what the Destination does with the flag—it just injects it to the specified JSON path and fires it off.
+As outlined in the "Error Correction Loop" above, when an admin fixes a mapping in the DLQ, they can initiate a replay.
 
-**The Replay State Machine:**
+**The Unified Replay Logic:**
 
-1. **PENDING:** The record is stuck (e.g., Unmapped Node).
-2. **DRY_RUN:** The Admin clicks "Test." The Adapter injects the `{ "is_dry_run": true }` flag (or whatever is configured in `dry_run.inject_path`) into the mapped payload, and POSTs it to the destination.
-    * **Result A (Fail):** Destination returns 400 Validation Error. Admin sees the error in the logs, stays in PENDING.
-    * **Result B (Success):** Destination returns 200/202 (having likely rolled back its own transaction due to the flag). Admin sees "Destination Accepted," transitions to READY.
-3. **APPLIED:** The Admin clicks "Submit." The Adapter strips the `dry_run` flag (or sets it to false) and sends the real payload. The DLQ record moves to `COMPLETED`.
+1. **DLQ State:** The record is stuck with `status=DLQ` and has a generated `correlation_id` to track its origin.
+2. **The Edit & Replay:** The System Administrator edits the raw JSON payload in the Adapter DLQ UI and hits submit to the Replay endpoint (`POST /admin/dlq/{id}/replay`).
+3. **The Spawning:**
+    * The system marks the original DLQ record's status as `REPROCESSED`.
+    * It creates a **new** record in `adapter_inbox` with the corrected payload.
+    * Crucially, the new record inherits the exact same `correlation_id` from the original event, and its `parent_inbox_id` targets the failed ID.
+    * The new record's status is `RECEIVED`.
+4. **Processing:** The asynchronous worker picks up the new `RECEIVED` row exactly as if it were a brand new submission from the source, guaranteeing that retries respect all idempotency and validation rules natively.
 
 ---
 

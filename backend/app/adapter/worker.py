@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from core.database import async_session_maker
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, DeadLetterQueue, AdapterLogs
+from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, AdapterLogs
 from app.adapter.schemas.dsl import MappingContractDSL
 from app.adapter.engine.mapper import MapperEngine
 
@@ -34,6 +34,16 @@ class AdapterWorker:
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount
+
+    @staticmethod
+    async def insert_log_async(log_data: dict):
+        """Fire-and-forget log insertion in a dedicated lightweight session."""
+        try:
+            async with async_session_maker() as log_session:
+                log_session.add(AdapterLogs(**log_data))
+                await log_session.commit()
+        except Exception as e:
+            logger.error(f"Failed to insert adapter log asynchronously: {e}")
 
     @staticmethod
     async def process_batch(batch_size: int = 50, session: AsyncSession = None):
@@ -99,14 +109,14 @@ class AdapterWorker:
                         )
                         
                         # Log Trace
-                        log_entry = AdapterLogs(
-                            inbox_id=item.id,
-                            destination_url=url,
-                            request_payload=cmd,
-                            response_status=str(response.status_code),
-                            response_body=response.text
-                        )
-                        session.add(log_entry)
+                        log_data = {
+                            "inbox_id": item.id,
+                            "destination_url": url,
+                            "request_payload": cmd,
+                            "response_status": str(response.status_code),
+                            "response_body": response.text
+                        }
+                        asyncio.create_task(AdapterWorker.insert_log_async(log_data))
                         
                         if response.status_code >= 500:
                             # Transient Destination Failure
@@ -116,19 +126,21 @@ class AdapterWorker:
                         elif response.status_code >= 400:
                             # Permanent Validation Rejection by Destination
                             item.status = InboxStatus.ERROR
+                            item.error_message = f"Destination Rejected: {response.status_code} - {response.text}"
                             await session.commit()
                             return
                             
                     except (httpx.ConnectError, httpx.TimeoutException) as net_err:
                         # Network Failure (Transient)
-                        log_entry = AdapterLogs(
-                            inbox_id=item.id,
-                            destination_url=url,
-                            request_payload=cmd,
-                            response_status="NETWORK_ERROR",
-                            response_body=str(net_err)
-                        )
-                        session.add(log_entry)
+                        log_data = {
+                            "inbox_id": item.id,
+                            "destination_url": url,
+                            "request_payload": cmd,
+                            "response_status": "NETWORK_ERROR",
+                            "response_body": str(net_err)
+                        }
+                        asyncio.create_task(AdapterWorker.insert_log_async(log_data))
+                        
                         item.status = InboxStatus.RETRY
                         await session.commit()
                         return
@@ -139,22 +151,15 @@ class AdapterWorker:
         except ValueError as e:
             if str(e).startswith("DLQ_TRIGGER"):
                 item.status = InboxStatus.DLQ
-                session.add(DeadLetterQueue(
-                    inbox_id=item.id,
-                    source_system=item.source_system,
-                    error_reason=str(e),
-                    context_data={
-                        "payload_snapshot": item.payload,
-                        "mapping_id": item.mapping_id,
-                        "mapping_version": item.mapping_version
-                    }
-                ))
+                item.error_message = str(e)
             else:
                 item.status = InboxStatus.ERROR
+                item.error_message = str(e)
             await session.commit()
         except Exception as e:
             logger.error(f"WORKER ERROR: {e}")
             item.status = InboxStatus.ERROR
+            item.error_message = str(e)
             await session.commit()
             
     @staticmethod

@@ -16,10 +16,10 @@ export interface AdapterInboxItem {
 
 export interface DeadLetterQueueItem {
     id: string;
-    inbox_id: string;
-    error_reason: string;
-    status: 'UNRESOLVED' | 'REPROCESSED';
-    raw_payload_snapshot: any;
+    correlation_id: string | null;
+    source_system: string;
+    error_message: string;
+    payload: any;
     created_at: string;
 }
 

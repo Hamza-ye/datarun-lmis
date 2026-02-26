@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.future import select
 
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, DeadLetterQueue
+from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
 from app.adapter.worker import AdapterWorker
 from unittest.mock import patch
 import httpx
@@ -144,3 +144,5 @@ async def test_worker_process_batch_dlq(db_session):
     
     # Without qty/facility/etc the mapper raises a KeyError/ValueError
     assert bad_record.status in [InboxStatus.ERROR, InboxStatus.DLQ]
+    assert bad_record.error_message is not None
+    assert len(bad_record.error_message) > 0

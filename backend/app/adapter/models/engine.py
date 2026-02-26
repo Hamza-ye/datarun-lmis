@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON, text
+from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON, text, Index
 from sqlalchemy.types import Uuid
 
 from core.database import Base
@@ -13,19 +13,31 @@ class InboxStatus(str, enum.Enum):
     RETRY = "RETRY"
     DLQ = "DLQ"
     ERROR = "ERROR"
+    REPROCESSED = "REPROCESSED"
 
 class AdapterInbox(Base):
     __tablename__ = "adapter_inbox"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    correlation_id = Column(Uuid(as_uuid=True), default=uuid.uuid4, index=True)
+    parent_inbox_id = Column(Uuid(as_uuid=True), nullable=True, index=True)
     source_system = Column(String, nullable=False, index=True)
     mapping_id = Column(String, nullable=True)
     mapping_version = Column(String, nullable=True)
     source_event_id = Column(String, nullable=True, index=True)
     payload = Column(JSON, nullable=False)
     status = Column(Enum(InboxStatus, name="inbox_status"), nullable=False, default=InboxStatus.RECEIVED)
+    error_message = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    __table_args__ = (
+        Index(
+            "idx_inbox_pending",
+            "status",
+            postgresql_where=status.in_([InboxStatus.RECEIVED, InboxStatus.RETRY])
+        ),
+    )
     
 class MappingContract(Base):
     __tablename__ = "mapping_contracts"
@@ -46,15 +58,6 @@ class AdapterCrosswalk(Base):
     metadata_json = Column(JSON, nullable=True) # e.g., {"transform_factor": 25}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class DeadLetterQueue(Base):
-    __tablename__ = "dead_letter_queue"
-    
-    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    inbox_id = Column(Uuid(as_uuid=True), nullable=False)
-    source_system = Column(String, nullable=False)
-    error_reason = Column(String, nullable=False)
-    context_data = Column(JSON, nullable=True)
-    status = Column(String, nullable=False, default="UNRESOLVED") # UNRESOLVED, REPROCESSED, DISCARDED
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class AdapterLogs(Base):

@@ -53,6 +53,7 @@ async def test_adapter_inbox_requires_external_role(async_client: AsyncClient, d
     res2 = await async_client.post("/api/adapter/inbox", json=payload, headers=auth_header("mock_external_system_token"))
     assert res2.status_code == 202
     assert "inbox_id" in res2.json()
+    assert "correlation_id" in res2.json()
 
 @pytest.mark.asyncio
 async def test_ledger_commands_requires_ledger_role(async_client: AsyncClient):

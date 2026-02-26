@@ -4,16 +4,30 @@
         <button class="btn btn-primary" (click)="refreshQueue()">↻ Refresh</button>
     </div>
 
+    @if (editingItem()) {
+    <div class="glass-panel edit-panel">
+        <h3>Edit & Replay Payload: <span class="font-mono text-sm">{{ editingItem()?.id }}</span></h3>
+        <p class="text-danger"><strong>Error:</strong> {{ editingItem()?.error_message }}</p>
+        <div class="form-group">
+            <textarea [(ngModel)]="payloadEdit" rows="15" class="form-control font-mono" spellcheck="false">
+                </textarea>
+        </div>
+        <div class="edit-actions mt-4">
+            <button class="btn btn-primary" (click)="submitRetry()">Run Replay</button>
+            <button class="btn btn-glass" (click)="cancelEdit()">Cancel</button>
+        </div>
+    </div>
+    } @else {
     @if (isLoading()) {
     <div class="glass-panel text-center">Loading queue state...</div>
     } @else {
     <table class="glass-table glass-panel">
         <thead>
             <tr>
-                <th>DLQ ID</th>
-                <th>Inbox Reference</th>
-                <th>Error Reason</th>
-                <th>Status</th>
+                <th>Item ID</th>
+                <th>Correlation Code</th>
+                <th>Source System</th>
+                <th>Error Message</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -21,17 +35,12 @@
             @for (item of items(); track item.id) {
             <tr>
                 <td class="font-mono text-sm">{{ item.id }}</td>
-                <td class="font-mono text-sm">{{ item.inbox_id }}</td>
-                <td class="text-danger">{{ item.error_reason }}</td>
+                <td class="font-mono text-sm">{{ item.correlation_id || 'N/A' }}</td>
+                <td>{{ item.source_system }}</td>
+                <td class="text-danger">{{ item.error_message }}</td>
                 <td>
-                    <span class="badge" [ngClass]="item.status === 'UNRESOLVED' ? 'badge-danger' : 'badge-warning'">
-                        {{ item.status }}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn btn-glass" (click)="retryItem(item.id!)"
-                        [disabled]="item.status !== 'UNRESOLVED'">
-                        Retry Payload
+                    <button class="btn btn-glass" (click)="startEdit(item)">
+                        Edit & Replay
                     </button>
                 </td>
             </tr>
@@ -44,5 +53,6 @@
             }
         </tbody>
     </table>
+    }
     }
 </div>

@@ -24,8 +24,8 @@ export class AdapterService {
         return this.http.get<DeadLetterQueueItem[]>('/api/adapter/admin/dlq');
     }
 
-    replayDlq(id: string): Observable<any> {
-        return this.http.post(`/api/adapter/admin/dlq/${id}/retry`, {});
+    replayDlq(id: string, payloadEdit: any): Observable<any> {
+        return this.http.post(`/api/adapter/admin/dlq/${id}/replay`, payloadEdit);
     }
 
     getContracts(): Observable<MappingContract[]> {

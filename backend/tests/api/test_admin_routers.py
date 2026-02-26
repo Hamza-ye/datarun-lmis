@@ -87,3 +87,53 @@ async def test_crosswalk_crud(async_client: AsyncClient):
     assert res_get.json()[0]["source_value"] == "clx_123"
 
     app.dependency_overrides.clear()
+
+@pytest.mark.asyncio
+async def test_dlq_replay(async_client: AsyncClient, db_session):
+    from app.core.security import ActorContext, get_current_actor
+    from app.adapter.models.engine import AdapterInbox, InboxStatus
+    import uuid
+    
+    admin_ctx = ActorContext(
+        actor_id="admin_1",
+        roles=["system_admin"],
+        allowed_nodes=["GLOBAL"]
+    )
+    app.dependency_overrides[get_current_actor] = lambda: admin_ctx
+    
+    # 1. Seed a DLQ item
+    bad_inbox = AdapterInbox(
+        correlation_id=uuid.uuid4(),
+        source_system="dhis2",
+        mapping_id="test_mapping",
+        mapping_version="1.0",
+        payload={"bad": "data"},
+        status=InboxStatus.DLQ,
+        error_message="Missing required field"
+    )
+    db_session.add(bad_inbox)
+    await db_session.commit()
+    
+    # 2. Replay the DLQ item with a fixed payload
+    fixed_payload = {"good": "data", "fixed": True}
+    res = await async_client.post(f"/api/adapter/admin/dlq/{str(bad_inbox.id)}/replay", json=fixed_payload)
+    
+    assert res.status_code == 201
+    res_data = res.json()
+    assert "new_inbox_id" in res_data
+    assert res_data["correlation_id"] == str(bad_inbox.correlation_id)
+    
+    # 3. Verify the old record is REPROCESSED
+    from sqlalchemy.future import select
+    stmt_old = select(AdapterInbox).where(AdapterInbox.id == bad_inbox.id)
+    old_record = (await db_session.execute(stmt_old)).scalars().first()
+    assert old_record.status == InboxStatus.REPROCESSED
+    
+    # 4. Verify the new record is RECEIVED and linked to the parent
+    stmt_new = select(AdapterInbox).where(AdapterInbox.id == uuid.UUID(res_data["new_inbox_id"]))
+    new_record = (await db_session.execute(stmt_new)).scalars().first()
+    assert new_record.status == InboxStatus.RECEIVED
+    assert new_record.parent_inbox_id == bad_inbox.id
+    assert new_record.payload == fixed_payload
+    
+    app.dependency_overrides.clear()

@@ -1,12 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AdapterService } from '../../services/adapter.service';
 import { DeadLetterQueueItem } from '../../models/adapter.dto';
 
 @Component({
     selector: 'app-dlq-dashboard',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './dlq-dashboard.html',
     styleUrls: ['./dlq-dashboard.scss']
 })
@@ -15,6 +16,8 @@ export class DlqDashboard implements OnInit {
 
     public items = signal<DeadLetterQueueItem[]>([]);
     public isLoading = signal<boolean>(true);
+    public editingItem = signal<DeadLetterQueueItem | null>(null);
+    public payloadEdit = signal<string>('');
 
     ngOnInit() {
         this.refreshQueue();
@@ -22,6 +25,7 @@ export class DlqDashboard implements OnInit {
 
     refreshQueue() {
         this.isLoading.set(true);
+        this.editingItem.set(null);
         this.adapterService.getDeadLetterQueue().subscribe({
             next: (data) => {
                 this.items.set(data);
@@ -34,10 +38,31 @@ export class DlqDashboard implements OnInit {
         });
     }
 
-    retryItem(id: string) {
-        this.adapterService.replayDlq(id).subscribe({
+    startEdit(item: DeadLetterQueueItem) {
+        this.editingItem.set(item);
+        this.payloadEdit.set(JSON.stringify(item.payload, null, 2));
+    }
+
+    cancelEdit() {
+        this.editingItem.set(null);
+        this.payloadEdit.set('');
+    }
+
+    submitRetry() {
+        const item = this.editingItem();
+        if (!item) return;
+
+        let parsedPayload: any;
+        try {
+            parsedPayload = JSON.parse(this.payloadEdit());
+        } catch (e) {
+            alert("Invalid JSON format");
+            return;
+        }
+
+        this.adapterService.replayDlq(item.id, parsedPayload).subscribe({
             next: () => {
-                this.refreshQueue(); // Refresh to securely drop the item from the queue
+                this.refreshQueue();
             },
             error: (err) => console.error('Retry failed', err)
         });
