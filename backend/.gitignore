@@ -2,7 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+*out.txt
+*err.txt
 # C extensions
 *.so
 
@@ -169,8 +170,3 @@ cython_debug/
 # Specific environment files
 .env.*
 !.env.example
-
-
-err.txt
-pytest_integration_out.txt
-test_err.txt
