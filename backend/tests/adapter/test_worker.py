@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.future import select
 
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
+from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, ContractStatus
 from app.adapter.worker import AdapterWorker
 from unittest.mock import patch
 import httpx
@@ -65,7 +65,7 @@ async def test_worker_process_batch_happy_path(mock_request, db_session):
     contract = MappingContract(
         id="worker_test_contract",
         version="1.0.0",
-        status="ACTIVE",
+        status=ContractStatus.ACTIVE,
         dsl_config=DUMMY_DSL
     )
     
@@ -110,7 +110,7 @@ async def test_worker_process_batch_dlq(db_session):
     contract = MappingContract(
         id="worker_test_contract",
         version="1.0.0",
-        status="ACTIVE",
+        status=ContractStatus.ACTIVE,
         dsl_config=DUMMY_DSL
     )
     
@@ -137,12 +137,12 @@ async def test_worker_process_batch_dlq(db_session):
 
     await AdapterWorker.process_batch(batch_size=10, session=db_session)
     
-    # Check if the bad item threw an Exception and went to ERROR or DLQ
+    # Check if the bad item threw an Exception and went to DLQ
     stmt_bad = select(AdapterInbox).where(AdapterInbox.id == bad_id)
     result_bad = await db_session.execute(stmt_bad)
     bad_record = result_bad.scalars().first()
     
     # Without qty/facility/etc the mapper raises a KeyError/ValueError
-    assert bad_record.status in [InboxStatus.ERROR, InboxStatus.DLQ]
+    assert bad_record.status in [InboxStatus.DESTINATION_REJECTED, InboxStatus.DLQ]
     assert bad_record.error_message is not None
     assert len(bad_record.error_message) > 0

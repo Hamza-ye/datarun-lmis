@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON, text, Index
+from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON, text, Index, CheckConstraint
 from sqlalchemy.types import Uuid
 
 from core.database import Base
@@ -10,10 +10,19 @@ class InboxStatus(str, enum.Enum):
     PROCESSING = "PROCESSING"
     MAPPED = "MAPPED"
     FORWARDED = "FORWARDED"
-    RETRY = "RETRY"
+    RETRY_EGRESS = "RETRY_EGRESS"
     DLQ = "DLQ"
-    ERROR = "ERROR"
+    DESTINATION_REJECTED = "DESTINATION_REJECTED"
     REPROCESSED = "REPROCESSED"
+
+class ContractStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    REVIEW = "REVIEW"
+    APPROVED = "APPROVED"
+    ACTIVE = "ACTIVE"
+    DEPRECATED = "DEPRECATED"
+    ARCHIVED = "ARCHIVED"
+    REJECTED = "REJECTED"
 
 class AdapterInbox(Base):
     __tablename__ = "adapter_inbox"
@@ -26,6 +35,7 @@ class AdapterInbox(Base):
     mapping_version = Column(String, nullable=True)
     source_event_id = Column(String, nullable=True, index=True)
     payload = Column(JSON, nullable=False)
+    mapped_payload = Column(JSON, nullable=True)
     status = Column(Enum(InboxStatus, name="inbox_status"), nullable=False, default=InboxStatus.RECEIVED)
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -35,7 +45,12 @@ class AdapterInbox(Base):
         Index(
             "idx_inbox_pending",
             "status",
-            postgresql_where=status.in_([InboxStatus.RECEIVED, InboxStatus.RETRY])
+            postgresql_where=status.in_([InboxStatus.RECEIVED, InboxStatus.MAPPED, InboxStatus.RETRY_EGRESS])
+        ),
+        CheckConstraint(
+            "(status NOT IN ('MAPPED', 'FORWARDED', 'RETRY_EGRESS', 'DESTINATION_REJECTED')) OR "
+            "(mapping_id IS NOT NULL AND mapping_version IS NOT NULL AND mapped_payload IS NOT NULL)",
+            name="chk_mapped_state_requirements"
         ),
     )
     
@@ -44,8 +59,11 @@ class MappingContract(Base):
     
     id = Column(String, primary_key=True)  # e.g., 'hf_receipt_902'
     version = Column(String, primary_key=True)
-    status = Column(String, nullable=False) # ACTIVE, DEPRECATED
+    status = Column(Enum(ContractStatus, name="contract_status"), nullable=False) # ACTIVE, DEPRECATED
     dsl_config = Column(JSON, nullable=False)
+    sample_in = Column(JSON, nullable=True)
+    expected_out = Column(JSON, nullable=True)
+    test_result_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class AdapterCrosswalk(Base):
@@ -58,10 +76,8 @@ class AdapterCrosswalk(Base):
     metadata_json = Column(JSON, nullable=True) # e.g., {"transform_factor": 25}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class AdapterLogs(Base):
-    __tablename__ = "adapter_logs"
+class AdapterEgressLogs(Base):
+    __tablename__ = "adapter_egress_logs"
     
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     inbox_id = Column(Uuid(as_uuid=True), nullable=False, index=True)
@@ -69,4 +85,6 @@ class AdapterLogs(Base):
     request_payload = Column(JSON, nullable=False)
     response_status = Column(String, nullable=True)
     response_body = Column(String, nullable=True)
+    retry_count = Column(BigInteger, default=0)
+    delivery_time_ms = Column(BigInteger, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
