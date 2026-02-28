@@ -10,3 +10,5 @@ aiosqlite
 jsonpath-ng
 httpx
 aiocron
+ruff
+pytest-archon

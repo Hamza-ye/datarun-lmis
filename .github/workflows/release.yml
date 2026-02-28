@@ -1,0 +1,27 @@
+name: Release Pipeline (CD)
+
+# This workflow is a PLACEHOLDER for the future Release Pipeline.
+# It will be fully implemented after the next milestone.
+
+on:
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  release:
+    types: [published]
+
+jobs:
+  verify-and-deploy:
+    name: Production-Grade Verification & Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: COMING SOON
+        run: |
+          echo "This is a placeholder for the Release Pipeline."
+          echo "Future steps will include:"
+          echo "1. Spinning up Dockerized PostgreSQL."
+          echo "2. Running Alembic Migrations."
+          echo "3. Building Docker Images (FE/BE)."
+          echo "4. Deploying to Target VM."
+          exit 0
