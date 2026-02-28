@@ -1,7 +1,7 @@
 # ADR: 3-Layer Adapter Pipeline (Ingestion, Transformation, Egress)
 
 ## Status
-Proposed
+Accepted
 
 ## Context
 The current Datarun Adapter architecture processes incoming payloads in a single, monolithic background worker flow: it receives the payload, executes the mapping DSL, and forwards the HTTP request to the destination within the same logical execution boundary.

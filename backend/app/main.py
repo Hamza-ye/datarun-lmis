@@ -21,17 +21,19 @@ from app.adapter.worker import AdapterWorker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Start Background Worker
-    worker_task = asyncio.create_task(AdapterWorker.run_loop(interval_seconds=5))
+    # 1. Start Background Workers for Adapter (Layer 2 & Layer 3)
+    mapping_task = asyncio.create_task(AdapterWorker.run_mapping_loop(interval_seconds=5))
+    egress_task = asyncio.create_task(AdapterWorker.run_egress_loop(interval_seconds=5))
     
     yield
     
     # 2. Graceful Shutdown
-    worker_task.cancel()
+    mapping_task.cancel()
+    egress_task.cancel()
     try:
-        await worker_task
+        await asyncio.gather(mapping_task, egress_task)
     except asyncio.CancelledError:
-        print("Adapter Worker shutdown cleanly.")
+        print("Adapter Workers shutdown cleanly.")
         
     await engine.dispose()
 
