@@ -15,6 +15,7 @@ from app.adapter.api.admin import router as adapter_admin_router
 from app.ledger.api.router import ledger_router, gatekeeper_router
 from app.kernel.api.router import router as kernel_router
 from app.core.api import router as auth_router
+from app.composition.api.router import router as bff_router
 
 import asyncio
 from app.adapter.worker import AdapterWorker
@@ -111,6 +112,7 @@ app.include_router(adapter_admin_router)
 app.include_router(ledger_router)
 app.include_router(gatekeeper_router)
 app.include_router(kernel_router)
+app.include_router(bff_router)
 
 @app.get("/health")
 async def health_check():

@@ -6,6 +6,8 @@ from core.database import Base
 # Ensure the models are registered 
 from app.ledger.models.idempotency import IdempotencyRegistry
 from app.adapter.models.engine import AdapterInbox, MappingContract, AdapterCrosswalk, AdapterEgressLogs
+from app.kernel.models.registry import NodeRegistry
+from app.ledger.models.event_store import StockBalance, InventoryEvent
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
