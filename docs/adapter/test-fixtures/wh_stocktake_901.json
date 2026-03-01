@@ -1,0 +1,27 @@
+{
+    "uid": "stocktake001",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "DateOnly": "2026-01-15",
+            "invoiceDetails": [
+                {
+                    "_id": "01LINE001",
+                    "_index": 1,
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 120
+                },
+                {
+                    "_id": "01LINE002",
+                    "_index": 2,
+                    "wh_category": "ACT40",
+                    "wh_quantity": 85
+                }
+            ]
+        }
+    },
+    "form": "QBVcGxiko2q",
+    "version": 5,
+    "team": "teamUID001",
+    "orgUnit": "orgUnitUID001"
+}

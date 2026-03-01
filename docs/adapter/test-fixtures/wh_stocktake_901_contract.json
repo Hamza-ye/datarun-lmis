@@ -1,0 +1,74 @@
+{
+    "contract_info": {
+        "id": "wh_stocktake_901",
+        "version": "1.0",
+        "status": "ACTIVE",
+        "source_system": "commcare"
+    },
+    "ingress": {
+        "trigger_path": "$.form",
+        "trigger_value": "QBVcGxiko2q"
+    },
+    "destination": {
+        "url": "https://api.internal/ledger/v1/commands",
+        "method": "POST"
+    },
+    "dictionaries": {
+        "external": {
+            "node_map": {
+                "namespace": "orgunit_to_node",
+                "on_unmapped": "DLQ"
+            },
+            "item_map": {
+                "namespace": "wh_category_to_item",
+                "on_unmapped": "DLQ"
+            }
+        }
+    },
+    "processing_pipelines": {
+        "calculate_base_quantity": [
+            {
+                "op": "cast",
+                "type": "INTEGER"
+            },
+            {
+                "op": "multiply",
+                "factor_from": "dictionary.item_map.metadata.transform_factor"
+            }
+        ]
+    },
+    "output_template": [
+        {
+            "envelope": {
+                "source_event_id": {
+                    "path": "$.uid"
+                },
+                "timestamp": {
+                    "path": "$.formData.invoice.DateOnly"
+                }
+            },
+            "static_injection": {
+                "command_type": "STOCK_COUNT"
+            },
+            "global_fields": {
+                "target_node": {
+                    "path": "$.orgUnit",
+                    "dictionary": "external:node_map"
+                }
+            },
+            "iterator": {
+                "path": "$.formData.invoice.invoiceDetails[*]",
+                "fields": {
+                    "item_id": {
+                        "path": "$.wh_category",
+                        "dictionary": "external:item_map"
+                    },
+                    "quantity": {
+                        "path": "$.wh_quantity",
+                        "pipeline": "calculate_base_quantity"
+                    }
+                }
+            }
+        }
+    ]
+}

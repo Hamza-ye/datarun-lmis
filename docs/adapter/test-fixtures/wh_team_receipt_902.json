@@ -1,0 +1,28 @@
+{
+    "uid": "tIWc8agBMaG",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "team": "01KE5Q1Z6TMKDXV5W84ED64B1B",
+            "DateOnly": "2026-01-09",
+            "invoiceDetails": [
+                {
+                    "_id": "01KEM79W2VJ92F6Q0QZH36JVMX",
+                    "_index": 1,
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 704
+                },
+                {
+                    "_id": "01KEM79W2VMT69B1Q5MDA94NBA",
+                    "_index": 2,
+                    "wh_category": "ACT80",
+                    "wh_quantity": 2094
+                }
+            ]
+        }
+    },
+    "form": "KyX2QVNHAy5",
+    "version": 6,
+    "team": "H7UGyScQETJ",
+    "orgUnit": "iFOC7l2giOb"
+}

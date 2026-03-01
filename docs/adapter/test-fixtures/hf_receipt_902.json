@@ -1,0 +1,28 @@
+{
+    "uid": "DzkazRtL9Po",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "DateOnly": "2026-01-10",
+            "invoiceDetails": [
+                {
+                    "_id": "01KEMD4Y9TQYPBDKHQTTHTSWQA",
+                    "_index": 1,
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 66
+                },
+                {
+                    "_id": "01KEMD4Y9TM0JSEH65N432CNKN",
+                    "_index": 2,
+                    "wh_category": "ACT80",
+                    "wh_quantity": 147
+                }
+            ],
+            "wh_vouchernumber": 757
+        }
+    },
+    "form": "z0xxGWenaov",
+    "version": 10,
+    "team": "bzcarZnmzH1",
+    "orgUnit": "sbcyeyxn4Ly"
+}

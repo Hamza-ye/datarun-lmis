@@ -1,0 +1,27 @@
+{
+    "uid": "returns001",
+    "deleted": false,
+    "formData": {
+        "invoice": {
+            "DateOnly": "2026-01-12",
+            "invoiceDetails": [
+                {
+                    "_id": "01RETURN001",
+                    "_index": 1,
+                    "wh_category": "ACT20",
+                    "wh_quantity": 30
+                },
+                {
+                    "_id": "01RETURN002",
+                    "_index": 2,
+                    "wh_category": "MRDT25",
+                    "wh_quantity": 15
+                }
+            ]
+        }
+    },
+    "form": "returnsFormUID",
+    "version": 3,
+    "team": "teamReturns001",
+    "orgUnit": "orgUnitReturns001"
+}
