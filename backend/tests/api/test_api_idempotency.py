@@ -1,11 +1,12 @@
+import datetime
+
 import pytest
 import pytest_asyncio
-import asyncio
-from httpx import AsyncClient, ASGITransport
-import datetime
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 from core.database import get_db
+
 
 @pytest_asyncio.fixture
 async def async_client(db_session):
@@ -64,8 +65,8 @@ async def test_ledger_command_idempotency(async_client: AsyncClient, db_session)
 @pytest.mark.asyncio
 async def test_topology_correction_idempotency(async_client: AsyncClient, db_session):
     """Submits the same topology correction twice."""
-    from app.kernel.models.registry import NodeRegistry
     from app.core.security import ActorContext, get_current_actor
+    from app.kernel.models.registry import NodeRegistry
     
     admin_ctx = ActorContext(
         actor_id="admin_1",

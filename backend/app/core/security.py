@@ -1,7 +1,9 @@
-from typing import List, Optional
-from fastapi import Request, HTTPException, Security, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import List
+
+from fastapi import HTTPException, Security, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
+
 
 class ActorContext(BaseModel):
     """

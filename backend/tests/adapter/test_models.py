@@ -1,6 +1,13 @@
 import pytest
 from sqlalchemy.exc import IntegrityError
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, ContractStatus
+
+from app.adapter.models.engine import (
+    AdapterInbox,
+    ContractStatus,
+    InboxStatus,
+    MappingContract,
+)
+
 
 @pytest.mark.asyncio
 async def test_inbox_mapped_constraint_missing_payload(db_session):

@@ -1,8 +1,10 @@
 import uuid
-from sqlalchemy import Column, String, JSON, DateTime, func, UniqueConstraint
+
+from sqlalchemy import JSON, Column, DateTime, String, UniqueConstraint, func
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class SystemPolicy(Base):
     """

@@ -1,12 +1,13 @@
 import asyncio
-from typing import Dict, Any, Optional
+
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.ledger.schemas.command import LedgerCommand, TransactionType
 from app.ledger.models.event_store import InventoryEvent, StockBalance
+from app.ledger.schemas.command import LedgerCommand, TransactionType
+
 
 class InsufficientStockError(Exception):
     pass

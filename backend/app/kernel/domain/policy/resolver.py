@@ -1,9 +1,11 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.kernel.models.policy import SystemPolicy
 from app.kernel.models.registry import NodeRegistry
+
 
 class PolicyResolver:
     

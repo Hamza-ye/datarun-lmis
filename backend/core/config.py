@@ -4,6 +4,7 @@
 
 import os
 
+
 class Settings:
     PROJECT_NAME: str = "Datarun LMIS"
     # Provide a default for local development, expect to be overridden

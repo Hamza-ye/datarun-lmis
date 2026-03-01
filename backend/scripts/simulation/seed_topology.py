@@ -1,14 +1,14 @@
 import asyncio
-import sys
-import os
 import datetime
+import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import async_session_maker
-from app.kernel.models.registry import NodeRegistry, CommodityRegistry
 from app.adapter.models.engine import MappingContract
+from app.kernel.models.registry import CommodityRegistry, NodeRegistry
+from core.database import async_session_maker
+
 
 async def seed_topology():
     print("Seeding baseline simulation topology...")

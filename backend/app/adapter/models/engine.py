@@ -1,9 +1,21 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON, text, Index, CheckConstraint
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Enum,
+    Index,
+    String,
+    func,
+)
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class InboxStatus(str, enum.Enum):
     RECEIVED = "RECEIVED"

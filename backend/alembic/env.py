@@ -5,6 +5,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# CRITICAL: Import ALL modular models so Alembic can detect them
+# Adapter Models
+# Kernel Models
+# Ledger Models
 from alembic import context
 
 # IMPORT THE APP SETTINGS
@@ -12,18 +16,6 @@ from core.config import settings
 
 # IMPORT THE BASE METADATA
 from core.database import Base
-
-# CRITICAL: Import ALL modular models so Alembic can detect them
-# Adapter Models
-import app.adapter.models.engine
-# Ledger Models
-import app.ledger.models.idempotency
-import app.ledger.models.gatekeeper
-import app.ledger.models.event_store
-import app.ledger.models.in_transit
-# Kernel Models
-import app.kernel.models.registry
-import app.kernel.models.policy
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

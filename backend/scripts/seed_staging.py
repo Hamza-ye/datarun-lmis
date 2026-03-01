@@ -1,17 +1,17 @@
+import asyncio
+import logging
 import os
 import sys
-import logging
-import asyncio
-from uuid import uuid4
 from datetime import date
-from sqlalchemy import select, delete
+
+from sqlalchemy import delete, select
 
 # Add the 'backend' directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from app.adapter.models.engine import AdapterCrosswalk, MappingContract
+from app.kernel.models.registry import CommodityRegistry, NodeRegistry
 from core.database import async_session_maker
-from app.kernel.models.registry import NodeRegistry, CommodityRegistry
-from app.adapter.models.engine import MappingContract, AdapterCrosswalk
 
 # Configure minimal logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

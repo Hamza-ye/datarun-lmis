@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+
 from app.core.security import ActorContext, get_current_actor
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication & Identity"])

@@ -1,12 +1,13 @@
-import json
-from typing import Dict, Any, List
+from typing import Any, List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.adapter.schemas.dsl import MappingContractDSL
 from app.adapter.engine.json_path_extractor import JsonPathExtractor
 from app.adapter.engine.pipeline_runner import PipelineRunner
 from app.adapter.models.engine import AdapterCrosswalk
+from app.adapter.schemas.dsl import MappingContractDSL
+
 
 class MapperEngine:
     

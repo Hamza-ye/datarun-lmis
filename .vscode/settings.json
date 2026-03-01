@@ -7,7 +7,5 @@
     ],
     "python.testing.cwd": "${workspaceFolder}/backend",
     // Link the .env file so VS Code sees the PYTHONPATH during discovery
-    "python.envFile": "${workspaceFolder}/backend/.env",
-    // Ensure the correct virtual environment is used
-    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe"
+    "python.envFile": "${workspaceFolder}/backend/.env"
 }

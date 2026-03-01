@@ -1,8 +1,10 @@
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, func, UniqueConstraint
+
+from sqlalchemy import Column, DateTime, Integer, String, UniqueConstraint, func
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class InventoryEvent(Base):
     """

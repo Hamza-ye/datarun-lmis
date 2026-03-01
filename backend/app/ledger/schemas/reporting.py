@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 
 class StockBalanceResponse(BaseModel):
     """View model for the current pre-calculated stock projection"""

@@ -1,8 +1,11 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel
+
 from app.ledger.models.in_transit import InTransitStatus
+
 
 class InTransitTransferResponse(BaseModel):
     """Data Transfer Object representing an active or completed In-Transit shipment."""

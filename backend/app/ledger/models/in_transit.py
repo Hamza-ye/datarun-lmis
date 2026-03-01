@@ -1,9 +1,11 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, Enum, func
+
+from sqlalchemy import Column, DateTime, Enum, Integer, String, func
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class InTransitStatus(str, enum.Enum):
     OPEN = "OPEN"

@@ -1,13 +1,13 @@
 import asyncio
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from app.main import app
+
 from core.database import async_session_maker
+
 
 async def reset_db():
     print("WARNING: This will DESTROY all data in the LIMS. Press Ctrl+C to abort.")

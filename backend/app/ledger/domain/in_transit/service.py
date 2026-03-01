@@ -1,12 +1,13 @@
 import datetime
 import uuid
-from typing import Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.ledger.schemas.command import LedgerCommand, TransactionType
-from app.ledger.models.in_transit import InTransitRegistry, InTransitStatus, InternalDLQ
 from app.ledger.domain.event_store.service import EventStoreService
+from app.ledger.models.in_transit import InternalDLQ, InTransitRegistry, InTransitStatus
+from app.ledger.schemas.command import LedgerCommand, TransactionType
+
 
 class InTransitService:
     

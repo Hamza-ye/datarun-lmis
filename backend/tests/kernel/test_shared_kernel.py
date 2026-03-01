@@ -1,11 +1,11 @@
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
-from app.kernel.models.registry import NodeRegistry, CommodityRegistry
-from app.kernel.models.policy import SystemPolicy
 from app.kernel.domain.policy.resolver import PolicyResolver
+from app.kernel.models.policy import SystemPolicy
+from app.kernel.models.registry import CommodityRegistry, NodeRegistry
+
 
 @pytest_asyncio.fixture
 async def seed_kernel_data(db_session: AsyncSession):

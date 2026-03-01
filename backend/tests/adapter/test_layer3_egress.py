@@ -1,12 +1,20 @@
-import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 import uuid
-from httpx import Response
 from unittest.mock import patch
 
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, ContractStatus, AdapterEgressLogs
+import pytest
+from httpx import Response
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
+from app.adapter.models.engine import (
+    AdapterEgressLogs,
+    AdapterInbox,
+    ContractStatus,
+    InboxStatus,
+    MappingContract,
+)
 from app.adapter.worker import AdapterWorker
+
 
 @pytest.fixture
 def mock_contract_dsl():

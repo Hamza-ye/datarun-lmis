@@ -1,9 +1,11 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, DateTime, func, JSON, text
+
+from sqlalchemy import JSON, Column, DateTime, Enum, String, func
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class StagedCommandStatus(str, enum.Enum):
     AWAITING = "AWAITING"

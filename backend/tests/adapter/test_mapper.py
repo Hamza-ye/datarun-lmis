@@ -1,10 +1,11 @@
-import pytest
 import json
-from app.adapter.schemas.dsl import MappingContractDSL
+
+import pytest
+
 from app.adapter.engine.mapper import MapperEngine
-from app.adapter.models.engine import AdapterCrosswalk
 from app.adapter.engine.pipeline_runner import PipelineRunner
-from app.adapter.schemas.dsl import PipelineOp
+from app.adapter.models.engine import AdapterCrosswalk
+from app.adapter.schemas.dsl import MappingContractDSL, PipelineOp
 
 # Basic wh_stocktake_901 Payload for Context Testing
 MOCK_PAYLOAD = {

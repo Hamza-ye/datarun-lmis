@@ -1,10 +1,12 @@
+import datetime
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-import datetime
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 from core.database import get_db
+
 
 @pytest_asyncio.fixture
 async def async_client(db_session):
@@ -46,8 +48,9 @@ async def test_scd_type_2_node_update(async_client: AsyncClient):
     assert "Split created: True" in res_update.json()["message"]
     
     # 3. Verify Database State
-    from app.kernel.models.registry import NodeRegistry
     from sqlalchemy.future import select
+
+    from app.kernel.models.registry import NodeRegistry
     
     db_session = app.dependency_overrides[get_db]()
     stmt = select(NodeRegistry).where(NodeRegistry.uid == "CLINIC_A").order_by(NodeRegistry.valid_from)
@@ -98,9 +101,10 @@ async def test_commodity_creation(async_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_historical_topology_correction(async_client: AsyncClient, db_session):
+    from sqlalchemy.future import select
+
     from app.core.security import ActorContext, get_current_actor
     from app.kernel.models.registry import NodeRegistry
-    from sqlalchemy.future import select
     
     admin_ctx = ActorContext(
         actor_id="admin_1",

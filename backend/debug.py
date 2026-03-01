@@ -1,4 +1,5 @@
 import asyncio
+
 from app.adapter.engine.mapper import MapperEngine
 from app.adapter.schemas.dsl import MappingContractDSL
 
@@ -80,7 +81,7 @@ async def debug():
         
         cmds = await MapperEngine.run(DummySession(), payload, dsl)
         print(f"Engine Success: {cmds}")
-    except Exception as e:
+    except Exception:
         import traceback
         traceback.print_exc()
 

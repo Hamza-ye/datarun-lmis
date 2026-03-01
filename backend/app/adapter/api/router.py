@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, status
+from typing import Any, Dict
+
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from pydantic import BaseModel
-from typing import Dict, Any
 
 from app.core.security import ActorContext, get_current_actor
-from app.adapter.worker import AdapterWorker
 from core.database import get_db
 
 router = APIRouter(prefix="/api/adapter", tags=["Adapter"])
@@ -33,11 +33,12 @@ async def receive_external_payload(
     if "external_system" not in actor.roles and "system_admin" not in actor.roles:
         raise HTTPException(status_code=403, detail="Actor lacks required role: external_system or system_admin")
     
-    from sqlalchemy.future import select
     from fastapi import HTTPException
+    from sqlalchemy.future import select
+
+    from app.adapter.engine.mapper import MapperEngine
     from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract
     from app.adapter.schemas.dsl import MappingContractDSL
-    from app.adapter.engine.mapper import MapperEngine
     
     # Route matching: resolve active contract
     stmt = select(MappingContract).where(
@@ -100,9 +101,11 @@ async def replay_dlq_item(
     Step 5 of the architecture: Reprocess a failed DLQ item with a corrected payload.
     Creates a new RECEIVED inbox record linked to the previous failed one.
     """
-    from fastapi import HTTPException
     import uuid
+
+    from fastapi import HTTPException
     from sqlalchemy.future import select
+
     from app.adapter.models.engine import AdapterInbox, InboxStatus
     
     if "system_admin" not in actor.roles:
@@ -150,6 +153,7 @@ async def get_dlq_items(
 ):
     from fastapi import HTTPException
     from sqlalchemy.future import select
+
     from app.adapter.models.engine import AdapterInbox, InboxStatus
     
     if "system_admin" not in actor.roles:

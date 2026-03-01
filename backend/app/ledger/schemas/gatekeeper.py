@@ -1,10 +1,11 @@
-from enum import Enum
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
 from uuid import UUID
 
+from pydantic import BaseModel, Field
+
 from app.ledger.models.gatekeeper import ApprovalActionType, StagedCommandStatus
+
 
 class SupervisorActionPayload(BaseModel):
     """Payload received from the UI when a supervisor clicks Approve or Reject"""

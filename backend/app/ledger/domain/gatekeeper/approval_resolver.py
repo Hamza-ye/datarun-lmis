@@ -1,5 +1,6 @@
 from app.ledger.schemas.command import LedgerCommand
 
+
 class ApprovalResolver:
     @staticmethod
     def requires_approval(command: LedgerCommand, active_policies: dict) -> tuple[bool, str]:

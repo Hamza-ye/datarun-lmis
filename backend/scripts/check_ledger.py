@@ -1,7 +1,10 @@
 import asyncio
-from core.database import async_session_maker
-from app.ledger.models.event_store import StockBalance, InventoryEvent
+
 from sqlalchemy.future import select
+
+from app.ledger.models.event_store import InventoryEvent, StockBalance
+from core.database import async_session_maker
+
 
 async def run():
     async with async_session_maker() as session:

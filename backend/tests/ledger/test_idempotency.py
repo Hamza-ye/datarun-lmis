@@ -1,9 +1,10 @@
-import pytest
 from datetime import datetime, timezone
 
-from app.ledger.models.idempotency import IdempotencyStatus
+import pytest
+
 from app.ledger.domain.idempotency.service import IdempotencyService
 from app.ledger.schemas.command import LedgerCommand, TransactionType
+
 
 def get_dummy_command(source_id: str, version: int = 1) -> LedgerCommand:
     return LedgerCommand(

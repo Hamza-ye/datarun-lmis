@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
 from app.ledger.schemas.command import LedgerCommand
 
+
 class IdempotencyResult:
     """
     Data structure defining the Ledger's execution path after the Idempotency Guard check.

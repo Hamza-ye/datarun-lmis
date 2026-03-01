@@ -1,11 +1,12 @@
 from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from fastapi import HTTPException, status
 
 from app.core.security import ActorContext
-from app.ledger.models.event_store import StockBalance, InventoryEvent
-from app.ledger.schemas.reporting import StockBalanceResponse, LedgerHistoryResponse
+from app.ledger.models.event_store import InventoryEvent, StockBalance
+from app.ledger.schemas.reporting import LedgerHistoryResponse, StockBalanceResponse
+
 
 class ReportingService:
     """

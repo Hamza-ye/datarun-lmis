@@ -1,7 +1,10 @@
 import asyncio
-from core.database import async_session_maker
-from app.adapter.models.engine import AdapterLogs, DeadLetterQueue, AdapterInbox
+
 from sqlalchemy.future import select
+
+from app.adapter.models.engine import AdapterInbox, AdapterLogs, DeadLetterQueue
+from core.database import async_session_maker
+
 
 async def run():
     async with async_session_maker() as session:

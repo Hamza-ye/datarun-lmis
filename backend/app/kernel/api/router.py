@@ -1,15 +1,15 @@
 import datetime
-import uuid
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.security import ActorContext, get_current_actor
-from core.database import get_db
-from app.kernel.models.registry import CommodityRegistry, NodeRegistry
 from app.kernel.models.policy import SystemPolicy
+from app.kernel.models.registry import CommodityRegistry, NodeRegistry
+from core.database import get_db
 
 router = APIRouter(prefix="/api/kernel", tags=["Shared Kernel"])
 
@@ -284,7 +284,7 @@ async def historical_topology_correction(
     """
     actor.require_role("system_admin")
     
-    from sqlalchemy import and_, or_
+    from sqlalchemy import or_
     
     # 1. Idempotency / Double-Click Guard: Check if the exact split requested ALREADY exists
     stmt_check = select(NodeRegistry).where(

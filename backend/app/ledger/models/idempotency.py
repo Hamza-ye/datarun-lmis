@@ -1,9 +1,11 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, BigInteger, DateTime, func, JSON
+
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Enum, String, func
 from sqlalchemy.types import Uuid
 
 from core.database import Base
+
 
 class IdempotencyStatus(str, enum.Enum):
     PROCESSING = "PROCESSING"

@@ -1,13 +1,19 @@
 import asyncio
-import httpx
 import logging
+
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database import async_session_maker
-from app.adapter.models.engine import AdapterInbox, InboxStatus, MappingContract, AdapterEgressLogs
-from app.adapter.schemas.dsl import MappingContractDSL
 from app.adapter.engine.mapper import MapperEngine
+from app.adapter.models.engine import (
+    AdapterEgressLogs,
+    AdapterInbox,
+    InboxStatus,
+    MappingContract,
+)
+from app.adapter.schemas.dsl import MappingContractDSL
+from core.database import async_session_maker
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +28,7 @@ class AdapterWorker:
     async def reclaim_zombies(session: AsyncSession, stale_minutes: int = 15):
         """Reclaims inbox rows that were stuck in PROCESSING state due to worker crashes."""
         import datetime
+
         from sqlalchemy import update
         now = datetime.datetime.now(datetime.timezone.utc)
         threshold = now - datetime.timedelta(minutes=stale_minutes)
@@ -38,7 +45,6 @@ class AdapterWorker:
     @staticmethod
     async def insert_egress_log_async(log_data: dict, session: AsyncSession = None):
         """Fire-and-forget log insertion for Layer 3 (Egress) tracing."""
-        from app.adapter.models.engine import AdapterEgressLogs
         try:
             if session:
                 session.add(AdapterEgressLogs(**log_data))

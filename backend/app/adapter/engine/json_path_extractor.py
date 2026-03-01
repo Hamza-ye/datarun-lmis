@@ -1,5 +1,7 @@
-from jsonpath_ng import parse
 from typing import Any, List
+
+from jsonpath_ng import parse
+
 
 class JsonPathExtractor:
     """

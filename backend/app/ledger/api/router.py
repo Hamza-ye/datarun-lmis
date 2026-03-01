@@ -1,20 +1,22 @@
-import json
+from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import ActorContext, get_current_actor
-from core.database import get_db
-from app.ledger.schemas.command import LedgerCommand
-from app.ledger.domain.gatekeeper.service import GatekeeperService
 from app.ledger.domain.event_store.service import EventStoreService
+from app.ledger.domain.gatekeeper.service import GatekeeperService
 from app.ledger.domain.in_transit.service import InTransitService
-from app.ledger.schemas.command import TransactionType
-from typing import List, Optional
-from app.ledger.schemas.reporting import StockBalanceResponse, LedgerHistoryResponse
 from app.ledger.domain.reporting.service import ReportingService
-from app.ledger.schemas.gatekeeper import ApprovalActionRequest, StagedCommandResponse
-from app.ledger.schemas.in_transit import InTransitTransferResponse, ReceiveTransferRequest
+from app.ledger.schemas.command import LedgerCommand, TransactionType
+from app.ledger.schemas.gatekeeper import ApprovalActionRequest
+from app.ledger.schemas.in_transit import (
+    InTransitTransferResponse,
+    ReceiveTransferRequest,
+)
+from app.ledger.schemas.reporting import LedgerHistoryResponse, StockBalanceResponse
+from core.database import get_db
 
 ledger_router = APIRouter(prefix="/api/ledger", tags=["Ledger Core"])
 gatekeeper_router = APIRouter(prefix="/api/ledger/gatekeeper", tags=["Ledger Gatekeeper"])
@@ -72,8 +74,9 @@ async def submit_ledger_command(
             result = await EventStoreService.commit_command(db, command)
             
         # Update Idempotency Registry to COMPLETED
-        from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
         from sqlalchemy.future import select
+
+        from app.ledger.models.idempotency import IdempotencyRegistry, IdempotencyStatus
         stmt = select(IdempotencyRegistry).where(IdempotencyRegistry.source_event_id == command.source_event_id)
         idem_record = (await db.execute(stmt)).scalars().first()
         if idem_record:
@@ -93,8 +96,9 @@ async def list_staged_commands(
     List transactions awaiting approval for the actor's allowed nodes.
     """
     actor.require_role("ledger_supervisor")
-    from app.ledger.models.gatekeeper import StagedCommand
     from sqlalchemy.future import select
+
+    from app.ledger.models.gatekeeper import StagedCommand
     
     stmt = select(StagedCommand).where(StagedCommand.status == "AWAITING")
     if node_id:
@@ -129,7 +133,10 @@ async def resolve_staged_command(
     """
     actor.require_role("ledger_supervisor")
     
-    from app.ledger.schemas.gatekeeper import SupervisorActionPayload, ApprovalActionType
+    from app.ledger.schemas.gatekeeper import (
+        ApprovalActionType,
+        SupervisorActionPayload,
+    )
     
     action_type = ApprovalActionType.APPROVE if action_data.action == "APPROVE" else ApprovalActionType.REJECT
     payload = SupervisorActionPayload(
@@ -191,9 +198,10 @@ async def list_transfers(
     CQRS Read API: Fetches pending incoming/outgoing transfers.
     Automatically filters results based on the JWT `allowed_nodes` claims.
     """
-    from app.ledger.models.in_transit import InTransitRegistry
-    from sqlalchemy.future import select
     from sqlalchemy import or_
+    from sqlalchemy.future import select
+
+    from app.ledger.models.in_transit import InTransitRegistry
 
     stmt = select(InTransitRegistry)
     
@@ -226,8 +234,9 @@ async def receive_transfer(
         
     actor.require_role("ledger_system") 
     
-    from app.ledger.models.in_transit import InTransitRegistry
     from sqlalchemy.future import select
+
+    from app.ledger.models.in_transit import InTransitRegistry
     
     stmt = select(InTransitRegistry).where(InTransitRegistry.transfer_id == transfer_id)
     transfer = (await db.execute(stmt)).scalars().first()

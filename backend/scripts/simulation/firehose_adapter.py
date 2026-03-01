@@ -1,9 +1,10 @@
+import argparse
 import asyncio
-import httpx
+import datetime
 import random
 import uuid
-import datetime
-import argparse
+
+import httpx
 
 API_URL = "http://localhost:8001"
 # In MVP auth, the router expects the static string token. We ensure we pass the right mocked token if using that system,

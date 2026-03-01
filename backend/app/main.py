@@ -1,24 +1,27 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from contextlib import asynccontextmanager
-from core.database import engine, Base
-from core.logger import setup_logging, correlation_id_ctx
 import uuid
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from core.database import engine
+from core.logger import correlation_id_ctx, setup_logging
 
 # Initialize structured logging globally
 setup_logging()
 
-from app.adapter.api.router import router as adapter_router
-from app.adapter.api.admin import router as adapter_admin_router
-from app.ledger.api.router import ledger_router, gatekeeper_router
-from app.kernel.api.router import router as kernel_router
-from app.core.api import router as auth_router
-from app.composition.api.router import router as bff_router
-
 import asyncio
+
+from app.adapter.api.admin import router as adapter_admin_router
+from app.adapter.api.router import router as adapter_router
 from app.adapter.worker import AdapterWorker
+from app.composition.api.router import router as bff_router
+from app.core.api import router as auth_router
+from app.kernel.api.router import router as kernel_router
+from app.ledger.api.router import gatekeeper_router, ledger_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,6 +85,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 from app.ledger.domain.event_store.service import InsufficientStockError
+
 
 @app.exception_handler(InsufficientStockError)
 async def insufficient_stock_exception_handler(request: Request, exc: InsufficientStockError):
