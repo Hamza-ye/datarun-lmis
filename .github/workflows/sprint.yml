@@ -34,7 +34,7 @@ jobs:
         env:
           # Use SQLite for fast CI testing
           DATABASE_URL: "sqlite+aiosqlite:///:memory:"
-        run: pytest
+        run: python -m pytest
 
   frontend-ci:
     name: Frontend CI
