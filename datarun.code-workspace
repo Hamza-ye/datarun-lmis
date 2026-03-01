@@ -1,0 +1,23 @@
+{
+    "folders": [
+        {
+            "name": "Backend (FastAPI)",
+            "path": "backend"
+        },
+        {
+            "name": "Frontend (Angular)",
+            "path": "frontend"
+        },
+        {
+            "name": "API Specs",
+            "path": "openapi"
+        },
+        {
+            "name": "Project Root (Docs/Config)",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.terminal.activateEnvInSelectedTerminal": true
+    }
+}
