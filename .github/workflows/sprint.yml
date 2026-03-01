@@ -2,15 +2,18 @@ name: Sprint Pipeline (CI)
 
 on:
   push:
-    branches: ["**"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/sprint.yml"
   pull_request:
-  workflow_dispatch: # <--- To run manually
+    paths:
+      - "backend/**"
 jobs:
   backend-ci:
     name: Backend CI
     runs-on: ubuntu-latest
     # Only run if backend files or the workflow itself changed
-    if: github.event_name == 'pull_request' || contains(github.event.head_commit.modified, 'backend/')
+    # if: github.event_name == 'pull_request' || contains(github.event.head_commit.modified, 'backend/')
     defaults:
       run:
         working-directory: ./backend
