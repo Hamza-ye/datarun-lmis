@@ -53,7 +53,7 @@ async def test_newer_version_triggers_reversal(db_session):
 async def test_older_version_ignored(db_session):
     """If a delayed networking packet arrives containing an older version than we currently have, IGNORE it"""
     cmd_v2 = get_dummy_command("event-delay-4", version=2)
-    res1 = await IdempotencyService.check_or_register_command(db_session, cmd_v2)
+    await IdempotencyService.check_or_register_command(db_session, cmd_v2)
     
     # Delayed v1 packet arrives late
     cmd_v1 = get_dummy_command("event-delay-4", version=1)

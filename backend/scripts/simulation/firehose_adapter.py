@@ -72,7 +72,6 @@ async def trigger_firehose(count: int, event_type: str):
                 # 1. Post to Adapter Inbox (Expected 202 Accepted)
                 req_inbox = await client.post(f"{API_URL}/api/adapter/inbox", json=payload, headers=HEADERS)
                 req_inbox.raise_for_status()
-                inbox_id = req_inbox.json().get("inbox_id")
                 
                 print(f"[{i+1}/{count}] ✅ Successfully submitted event {payload['source_event_id']} to API.")
                 success += 1

@@ -1,6 +1,6 @@
 import asyncio
-from logging.config import fileConfig
 import sys
+from logging.config import fileConfig
 from pathlib import Path
 
 from sqlalchemy import pool
@@ -11,15 +11,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 sys.path.append(str(Path(__file__).parent.parent))
 # CRITICAL: Import ALL modular models so Alembic can detect them
 # Adapter Models
-import app.adapter.models.engine
+
 # Kernel Models
-import app.kernel.models.policy
-import app.kernel.models.registry
+
 # Ledger Models
-import app.ledger.models.event_store
-import app.ledger.models.gatekeeper
-import app.ledger.models.idempotency
-import app.ledger.models.in_transit
 from alembic import context
 
 # IMPORT THE APP SETTINGS

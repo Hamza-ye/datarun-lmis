@@ -65,13 +65,13 @@ async def submit_ledger_command(
     else:
         # Route to Area C (Event Store) or Area D (In-Transit)
         if command.transaction_type == TransactionType.TRANSFER:
-            result = await InTransitService.process_dispatch(db, command, dest_node_id=command.metadata.get("dest_node_id", "UNKNOWN"))
+            await InTransitService.process_dispatch(db, command, dest_node_id=command.metadata.get("dest_node_id", "UNKNOWN"))
         elif command.transaction_type == TransactionType.RECEIPT and command.transfer_id:
-            result = await InTransitService.process_receipt(db, command, command.transfer_id)
+            await InTransitService.process_receipt(db, command, command.transfer_id)
         elif command.transaction_type == TransactionType.LOSS_IN_TRANSIT and command.transfer_id:
-            result = await InTransitService.process_loss(db, command, command.transfer_id)
+            await InTransitService.process_loss(db, command, command.transfer_id)
         else:
-            result = await EventStoreService.commit_command(db, command)
+            await EventStoreService.commit_command(db, command)
             
         # Update Idempotency Registry to COMPLETED
         from sqlalchemy.future import select
