@@ -9,6 +9,14 @@ on:
     types: [published]
 
 jobs:
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Run Migrations
+  #       env:
+  #         DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+  #       run: |
+  #         docker run --rm my-backend-image alembic upgrade head
   verify-and-deploy:
     name: Production-Grade Verification & Deployment
     runs-on: ubuntu-latest
