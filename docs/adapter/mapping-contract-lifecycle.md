@@ -8,8 +8,7 @@
 | `REVIEW` | Submitted for review. `sample_in.json` and `expected_out.json` required. |
 | `APPROVED` | Review passed. Mapping test succeeded. Ready for activation. |
 | `ACTIVE` | Processing live traffic. **Locked — no edits.** |
-| `DEPRECATED` | Retired from new processing. Still valid for replay. |
-| `ARCHIVED` | Read-only. Removed from active UI. Kept for audit. |
+| `DEPRECATED` | Retired from new processing. Still valid for replay. Set `visible_in_ui = FALSE` to hide from active UI while preserving audit history. |
 | `REJECTED` | Review failed. Rejection reason recorded. |
 
 ## Transitions & Guards
@@ -35,9 +34,9 @@
 ### ACTIVE → DEPRECATED
 - Deprecated versions are not used for new processing.
 - Deprecated versions remain valid for replay.
+- Set `visible_in_ui = FALSE` to remove from active UI while preserving audit history.
 
-### DEPRECATED → ARCHIVED
-- Archived versions are read-only and removed from active UI (kept for audit).
+> **Design Note:** The former `ARCHIVED` status has been collapsed into `DEPRECATED` with a `visible_in_ui` flag. Status enums are domain vocabulary; UI visibility is a presentation concern. Keeping them separate avoids coupling the domain model to the UI layer.
 
 ## Rollback
 

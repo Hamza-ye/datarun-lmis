@@ -11,9 +11,10 @@ The Adapter functions as an **Anti-Corruption Layer (ACL)** between **DatarunAPI
 - Resolve crosswalks/lookups from read-only reference stores
 - Normalize units and types
 - Add provenance metadata (`source_event_id`, `contract_version`)
-- Retry transient transport failures
+- Derive per-command `source_event_id` when one payload produces multiple commands (`{payload_id}:{template_index}:{iterator_index}`)
+- Retry transient transport failures (exponential backoff)
 - Push to DLQ on permanent mapping failure or destination business rejection
-- Store `raw_payload` (Ingress) and `mapped_payload` (Post-Transform) for traceability
+- Store `raw_payload` (Ingestion) and `mapped_payload` (Post-Transform) for traceability
 
 **MUST NOT:**
 - Execute downstream business logic (e.g., stock calculations, permissions)
@@ -52,6 +53,7 @@ The Adapter is a 3-Layer Event Gateway (Ingestion → Transformation → Egress)
 | Topic | Document |
 | --- | --- |
 | Mapping DSL schema | [Mapping DSL Reference](mapping-dsl-reference.md) |
+| Multi-command atomicity | [Mapping DSL → Multi-Command Output](mapping-dsl-reference.md#multi-command-output-one-payload--multiple-commands) |
 | Database tables | [Database Schema](database-schema.md) |
 | DLQ & Replay | [DLQ and Replay](dlq-and-replay.md) |
 | Contract lifecycle | [Mapping Contract Lifecycle](mapping-contract-lifecycle.md) |

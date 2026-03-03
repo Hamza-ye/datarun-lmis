@@ -54,7 +54,50 @@ For every processed inbound event, the system MUST store:
 
 The stored version is **immutable**. Historical events must always be traceable to both the exact mapping version used and the exact JSON payload produced.
 
+## HTTP Failure Handling (Retry Policy)
+
+Not all HTTP failures are equal. The worker distinguishes **client errors** (Adapter's fault — retrying won't help) from **server errors** (destination temporarily down — retrying should help):
+
+| HTTP Status | Classification | Behaviour |
+|---|---|---|
+| 2xx | Success | Mark `FORWARDED` |
+| 400, 422 | Client Error | Mark `DESTINATION_REJECTED` immediately. Retrying won't help — the Adapter's output is structurally wrong. |
+| 5xx, timeout | Server Error | Mark `RETRY_EGRESS`. Retry with exponential backoff. After max attempts, mark `DLQ` with reason `destination_unreachable`. |
+
+### Retry Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `max_egress_retries` | 3 | Maximum delivery attempts before DLQ |
+| `backoff_base_seconds` | 2 | Base for exponential backoff (2, 4, 8...) |
+
+> **Invariant:** A payload must never be silently dropped due to a transient network failure. The retry mechanism is the safety net between the Adapter's "no silent drops" invariant and the reality of unreliable networks.
+
+## Bulk Replay
+
+When a mapping fix affects many records, an admin can replay all matching DLQ records in a single bulk operation:
+
+1. Admin selects DLQ records by filter (e.g., matching `error_message`, `mapping_id`, or date range).
+2. The system creates a job in `adapter_admin_jobs` tracking `job_type: REPLAY`, `triggered_by`, and `affected_records_count`.
+3. Each record is replayed individually (same mechanics as single replay — new inbox row, inherited `correlation_id`, `parent_inbox_id` linkage).
+4. The job record tracks `success_count` and `failure_count` for post-operation audit.
+
+See [Database Schema → adapter_admin_jobs](database-schema.md) for the tracking table.
+
+## Multi-Command Replay Safety
+
+When a replayed payload produces multiple Ledger commands (see [Mapping DSL → Multi-Command Output](mapping-dsl-reference.md#multi-command-output-one-payload--multiple-commands)):
+
+- Each command carries a deterministic `source_event_id` derived from the payload's source ID + template/iterator indices.
+- On replay, the same `source_event_id` values are regenerated.
+- Commands already successfully forwarded in the first attempt are **deduplicated by the Ledger's idempotency guard** — no double-counting.
+- Only previously-failed commands (never forwarded, or destination-rejected) result in new Ledger entries.
+
+> **Invariant:** Replay must be **idempotent at the Ledger level**. Replaying a partially-forwarded payload must not produce duplicate stock movements.
+
 ## Related Docs
 
 - **Inbox schema:** See [Database Schema](database-schema.md) for `adapter_inbox` columns
 - **Contract lifecycle:** See [Mapping Contract Lifecycle](mapping-contract-lifecycle.md)
+- **Multi-command atomicity:** See [Mapping DSL Reference](mapping-dsl-reference.md#multi-command-output-one-payload--multiple-commands)
+- **Correlation traceability:** See [Architecture → Correlation & Traceability](../architecture/correlation-traceability.md)

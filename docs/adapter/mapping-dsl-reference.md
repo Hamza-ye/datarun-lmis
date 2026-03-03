@@ -39,7 +39,9 @@ Simple key-value pairs stored directly in the JSON contract.
 }
 ```
 
-### `on_unmapped` Strategies
+### `on_unmapped` Strategies (**Required** on every dictionary)
+
+> **Invariant:** Every dictionary declaration must include an `on_unmapped` strategy. The DSL engine must reject contracts with missing `on_unmapped` at validation time, not at runtime. Undefined behaviour on unmapped values is how empty commands reach the Ledger.
 
 | Strategy | Behavior |
 | --- | --- |
@@ -110,6 +112,35 @@ Every field in the template can be defined in one of three ways:
 }
 ```
 
+## Multi-Command Output (One Payload → Multiple Commands)
+
+A single incoming payload can produce **multiple** Ledger commands when:
+- Multiple `output_template` entries match via `condition` blocks (e.g., receipts and issues in the same form)
+- The `iterator` processes an array where each element generates a separate command
+
+### Atomicity Rule
+
+The payload is the **atomic unit** of processing:
+- **Mapping phase:** If any line or template fails mapping (unmapped crosswalk, pipeline error), the **entire payload** goes to DLQ. No partial mapping is forwarded.
+- **Forwarding phase:** Each command is POSTed to the Ledger individually and logged in `adapter_egress_logs`.
+- **Replay:** The entire payload is reprocessed. The Ledger's idempotency guard deduplicates commands that were already forwarded successfully.
+
+### Per-Command `source_event_id` Derivation
+
+To ensure idempotent replay, each command generated from a single payload must have a **unique, deterministic** `source_event_id`:
+
+```
+{payload_source_event_id}:{template_index}:{iterator_index}
+```
+
+- `payload_source_event_id` — the incoming payload's identity (e.g., `submission.uid`)
+- `template_index` — which `output_template` entry matched (0-based)
+- `iterator_index` — which array element produced this command (0 if no iterator)
+
+This ensures that replaying a payload regenerates the **exact same set of `source_event_id` values**, and the Ledger's idempotency guard naturally deduplicates already-processed commands.
+
+> **Invariant:** Every command leaving the Adapter must carry a unique, deterministic `source_event_id`. If two commands share the same `source_event_id`, the Ledger will treat the second as a duplicate and discard it.
+
 ## Design Rationale
 
 1. **Pre-Processing Pipeline:** Handles typos (`ACT-80`, `act80`, `act_80`) via `[TRIM, UPPERCASE, REMOVE_SPECIAL_CHARS]` — all become `ACT80`.
@@ -122,3 +153,4 @@ Every field in the template can be defined in one of three ways:
 
 - **Working examples:** See [Test Fixtures](test-fixtures/)
 - **Contract lifecycle:** See [Mapping Contract Lifecycle](mapping-contract-lifecycle.md)
+- **Atomicity & replay:** See [DLQ and Replay](dlq-and-replay.md)

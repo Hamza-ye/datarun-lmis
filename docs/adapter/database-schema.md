@@ -47,7 +47,17 @@ External dictionary for high-speed lookups during mapping.
 | `source_value` | String | "Messy" value from external app (e.g., `act_80`) |
 | `internal_id` | String | Clean ID for destination (e.g., `PROD-AL-01`) |
 | `metadata_json` | JSONB | Contextual defaults or multipliers (e.g., `transform_factor`) |
+| `is_active` | Boolean | Default `TRUE`. Deactivated entries are treated as unmapped (the dictionary's `on_unmapped` strategy applies). |
 | `created_at` | Timestamp | Record creation time |
+| `updated_at` | Timestamp | Last modification time |
+
+**UNIQUE Constraint:**
+```sql
+UNIQUE (namespace, source_value)
+```
+> **Invariant:** Duplicate `(namespace, source_value)` pairs must be rejected at insert time. Without this, crosswalk lookups return non-deterministic results.
+
+**Deactivation Semantics:** When a node is deactivated in the Shared Kernel (e.g., clinic closed), the corresponding crosswalk entry should be set to `is_active = FALSE` rather than deleted. This preserves audit history while preventing new payloads from mapping to retired entities.
 
 ---
 
@@ -59,7 +69,8 @@ Stores the pure JSON DSL that powers the transformation engine.
 | --- | --- | --- |
 | `id` | String (PK) | Contract identifier (e.g., `hf_receipt_902`) |
 | `version` | String | Semantic version |
-| `status` | Enum | `DRAFT`, `REVIEW`, `APPROVED`, `ACTIVE`, `DEPRECATED`, `ARCHIVED`, `REJECTED` |
+| `status` | Enum | `DRAFT`, `REVIEW`, `APPROVED`, `ACTIVE`, `DEPRECATED`, `REJECTED` |
+| `visible_in_ui` | Boolean | Default `TRUE`. Set to `FALSE` to hide from active UI (replaces the former `ARCHIVED` status). |
 | `dsl_config` | JSONB | The JSON DSL config blob |
 | `created_at` | Timestamp | Record creation time |
 
