@@ -16,7 +16,7 @@ Solves the "Black Hole" problem in logistics: stock that has left the Warehouse 
 | `item_id` | String | The commodity |
 | `qty_shipped` | BigInt | Total sent (Base Units) |
 | `qty_received` | BigInt | Total acknowledged by destination so far |
-| `status` | Enum | `OPEN`, `PARTIAL`, `COMPLETED`, `STALE_AUTO_CLOSED`, `FAILED_AUTO_CLOSE` |
+| `status` | Enum | `OPEN`, `PARTIAL`, `COMPLETED`, `STALE_AUTO_CLOSED`, `FAILED_AUTO_CLOSE`, `LOST_IN_TRANSIT` |
 | `dispatched_at` | Timestamp | When the DEBIT from source was recorded |
 | `auto_close_after` | Timestamp (nullable) | Calculated deadline from Config Hierarchy |
 | `created_at` | Timestamp | Record creation |
@@ -74,13 +74,54 @@ If the auto-receive attempt fails (e.g., destination Clinic is disabled in the S
    - `error_message: "Node deactivated in Shared Kernel"`
 4. System alert generated for administrator investigation.
 
+## Loss Write-Off (LOST_IN_TRANSIT)
+
+Goods are regularly lost, stolen, or damaged in transit — especially in remote supply chains. Without an explicit mechanism, lost shipments either stay in `OPEN` limbo indefinitely, get silently auto-received (fabricating a receipt for goods that never arrived), or require unexplained manual ADJUSTMENT events that break the audit trail.
+
+### The Write-Off Flow
+
+1. A supervisor submits an `UPDATE_IN_TRANSIT_STATUS` command with `status: LOST_IN_TRANSIT`.
+2. The In-Transit Registry updates the record status to `LOST_IN_TRANSIT`.
+3. The system generates an `ADJUSTMENT` event (negative) at the **source** node with `adjustment_reason: LOSS_IN_TRANSIT`.
+4. The `qty_shipped - qty_received` remainder is the written-off quantity.
+
+> **Invariant:** `qty_dispatched = qty_received + qty_lost`. The accounting identity must hold. A transfer cannot simply vanish.
+
+### Policy
+
+| Policy | Type | Effect |
+|---|---|---|
+| `policy.transfer.loss_writeoff_requires_approval` | Boolean | If `TRUE`, the write-off command is routed through the Approval Gatekeeper before the ADJUSTMENT is generated. Default: `TRUE`. |
+
+See [Configuration Hierarchy](../architecture/configuration-hierarchy.md).
+
+## Partial Receipt Completion
+
+When a transfer is `PARTIAL` (some goods received, some outstanding), a completion protocol determines what happens to the remainder:
+
+1. **Deadline:** `policy.transfer.partial_receipt_deadline_days` (from Config Hierarchy). Clock starts at `dispatched_at`.
+2. **On Deadline Expiry:** The system does **not** silently auto-receive the remainder. Instead:
+   - The transfer is flagged for supervisor investigation.
+   - A system alert is generated.
+   - The supervisor must either: (a) confirm receipt of the remainder, (b) mark as `LOST_IN_TRANSIT`, or (c) extend the deadline.
+3. **Invariant:** Partial transfers must **not** be silently auto-closed as `STALE_AUTO_CLOSED`. Auto-close applies only to `OPEN` transfers with zero receipts (full auto-receipt). `PARTIAL` transfers have evidence of actual logistics activity and demand explicit resolution.
+
+## Discrepancy Escalation
+
+Significant discrepancies between `qty_shipped` and `qty_received` are automatically routed through the Approval Gatekeeper:
+
+| Policy | Type | Effect |
+|---|---|---|
+| `policy.transfer.discrepancy_threshold_pct` | Integer (%) | If `(qty_shipped - qty_received) / qty_shipped > threshold` on receipt, the receipt command is staged for approval. Default: `20%`. |
+
 ## Integration Notes
 
 - **Client Role:** The submitting Client must include `transfer_id` so the Registry knows which in-transit record to close.
-- **Approval Role:** Significant discrepancies (e.g., sent 100, received 20) should trigger the Approval Gatekeeper for investigation.
+- **Approval Role:** The Approval Gatekeeper gates loss write-offs and significant discrepancies based on configurable policy.
 
 ## Related Docs
 
 - **Event math:** [Event Store](event-store.md)
 - **All tables:** [Database Schema](database-schema.md)
 - **Policy config:** [Architecture → Configuration Hierarchy](../architecture/configuration-hierarchy.md)
+- **Adjustment reasons:** [Event Store → Adjustment Reasons](event-store.md#adjustment-reasons)

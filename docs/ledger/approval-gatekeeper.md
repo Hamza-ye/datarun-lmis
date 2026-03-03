@@ -55,11 +55,39 @@ See [Architecture → Configuration Hierarchy](../architecture/configuration-hie
 | --- | --- | --- |
 | `policy.approval.required_on` | `List[TransactionTypes]` | `[ADJUSTMENT, STOCK_COUNT]` |
 | `policy.approval.auto_approve_threshold` | `Integer` | Variance < 10 units → bypass |
-| `policy.approval.role_required` | `String` | MU: `SUPERVISOR`, WH: `MANAGER` |
+| `policy.approval.role_required` | `String` | Resolved at runtime from `lmis_user_permissions.lmis_roles` |
 | `policy.approval.bypass_emergency` | `Boolean` | Emergency orders skip queue |
+| `policy.approval.reversal_requires_approval` | `ALWAYS \| THRESHOLD \| NEVER` | Controls whether edit-triggered reversals require approval. Default: `ALWAYS`. See [Idempotency Guard](idempotency-guard.md). |
+| `policy.approval.expiry_days` | `Integer` | Staged commands older than this are expired by the Lifecycle Worker. Default: `30`. |
+
+## Staged Command Expiry
+
+Staged commands that sit in `AWAITING` indefinitely represent a governance risk: balances, registries, and even the commodity itself may have changed since staging. A **Lifecycle Worker** (orchestrator) manages expiry:
+
+1. The worker is a background cron job (same pattern as the In-Transit auto-close worker).
+2. It queries: `WHERE status = 'AWAITING' AND created_at + policy.approval.expiry_days < now()`.
+3. For each match, it calls `GatekeeperService.expire(id)` which transitions the status to `EXPIRED`.
+4. The Idempotency Registry entry is updated to `FAILED` so the source can re-submit if needed.
+
+> **Invariant:** `EXPIRED → APPROVED` is a forbidden transition. Once expired, a command must be re-submitted from the source.
+
+> **Design Note:** The expiry trigger is an **orchestration concern**, not domain logic. The Approval Gatekeeper defines valid state transitions (`AWAITING → EXPIRED`); the Lifecycle Worker decides *when* to trigger them based on policy. Domain models are passive; orchestrators are active.
+
+## Reversal Approval Policy
+
+When the Idempotency Guard detects an edited form and generates a `REVERSAL` command, whether that reversal requires approval is a **configurable policy**, not a hard rule:
+
+| `policy.approval.reversal_requires_approval` | Behaviour |
+|---|---|
+| `ALWAYS` (default) | Every reversal is staged for approval regardless of size |
+| `THRESHOLD` | Reversal is staged only if it exceeds `auto_approve_threshold` |
+| `NEVER` | Reversals are processed immediately (for low-governance environments) |
+
+> The reversal *mechanism* (Reverse & Replace) is an invariant of an append-only ledger. Requiring human approval for every reversal is a governance policy. See [Idempotency Guard](idempotency-guard.md).
 
 ## Related Docs
 
 - **Previous step:** [Idempotency Guard](idempotency-guard.md)
 - **Next step:** [Event Store](event-store.md)
 - **Auth/RBAC:** [Architecture → Auth & Authorization](../architecture/auth-and-authorization.md)
+- **Policy config:** [Architecture → Configuration Hierarchy](../architecture/configuration-hierarchy.md)

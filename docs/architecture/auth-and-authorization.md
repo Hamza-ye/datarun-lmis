@@ -146,8 +146,39 @@ async def approve_staged_transaction(
 4. **ActorContext = identity + authorization.** Built by the HTTP layer, consumed by domain services.
 5. **Phase 2: Federation.** Keycloak replaces DatarunAPI as identity provider. LMIS authorization layer stays unchanged.
 
+---
+
+## Future: Permission Verbs (Deferred)
+
+The current authorization model checks **role names** (nouns): `actor.require_role("ledger_supervisor")`. A more extensible model checks **permissions** (verbs): `actor.has_permission("approve_staged_command")`.
+
+### The Concept
+
+- **Roles remain bundles of permissions:** `ledger_supervisor` = `[approve_staged_command, view_staged_queue, write_off_loss]`
+- **Authorization checks use verbs:** Domain services check `has_permission("approve_staged_command")`, never `require_role("ledger_supervisor")`.
+- **Role names become configuration, not code.** Adding a new role or renaming an existing one requires only a data change, not a code change.
+
+### Example Permission Verbs (Illustrative)
+
+| Verb | BC | Description |
+|---|---|---|
+| `approve_staged_command` | Ledger | Approve/reject staged commands |
+| `view_staged_queue` | Ledger | View the approval queue |
+| `write_off_loss` | Ledger | Mark in-transit goods as lost |
+| `submit_ledger_command` | Ledger | POST commands to the Ledger (system accounts) |
+| `replay_dlq` | Adapter | Trigger DLQ replay |
+| `manage_crosswalks` | Adapter | Add/edit crosswalk mappings |
+| `manage_mapping_contracts` | Adapter | Lifecycle management of mapping contracts |
+
+### Why Deferred
+
+At current scale (single builder, single deployment), role-based checks are sufficient. The permission-verb model adds value when: (a) multiple teams need fine-grained access control, or (b) role definitions need to vary per deployment without code changes. The `ActorContext` pattern already provides the hook — only the resolution logic needs to change.
+
+> **Migration Path:** When ready, add a `lmis_permissions` table mapping `role → [verbs]`. Change `ActorContext.require_role()` to `ActorContext.has_permission()`. No domain service changes needed — only the auth middleware layer.
+
 ## Related Docs
 
 - [ADR-008: Auth Phased Strategy](../adrs/008-auth-phased-strategy.md)
 - [Context Map](context-map.md)
 - [Integration Contract — DatarunAPI](integration-contract-datarunapi.md)
+- [Configuration Hierarchy](configuration-hierarchy.md)

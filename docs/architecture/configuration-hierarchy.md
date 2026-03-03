@@ -23,16 +23,39 @@ The system respects the global default (`FALSE`) without configuring a thousand 
 
 ## Data-Configurable Policies
 
+### Inventory Rules
+
 | Policy Key | Options / Type | Example |
 | --- | --- | --- |
-| `policy.negative_stock.behavior` | `ALLOW \| WARN \| BLOCK` | Global: `BLOCK`. Mobile Unit: `ALLOW` |
-| `policy.transfer.auto_receive_days` | `Integer` | Global: `14`. Specific Clinic: `30` |
+| `policy.negative_stock.behavior` | `ALLOW` / `WARN` / `BLOCK` | Global: `BLOCK`. Mobile Unit: `ALLOW` |
 | `policy.batch.tracking_required` | `Boolean` | Category 'Drugs': `TRUE`. 'Bednets': `FALSE` |
-| `policy.consumption.calculation_method` | `IMPLIED_BY_COUNT \| EXPLICIT_ISSUE` | Per programme need |
+| `policy.consumption.calculation_method` | `IMPLIED_BY_COUNT` / `EXPLICIT_ISSUE` | Per programme need |
+
+### Approval Policies
+
+| Policy Key | Options / Type | Example |
+| --- | --- | --- |
 | `policy.approval.required_on` | `List[TransactionTypes]` | Global: `[ADJUSTMENT, STOCK_COUNT]` |
 | `policy.approval.auto_approve_threshold` | `Integer` | If Variance < 10 units, bypass approval |
-| `policy.approval.role_required` | `String` | Mobile Unit: `SUPERVISOR`. Warehouse: `MANAGER` |
+| `policy.approval.role_required` | `String` | Resolved at runtime from `lmis_user_permissions.lmis_roles` |
 | `policy.approval.bypass_emergency` | `Boolean` | Allows emergency orders to skip the queue |
+| `policy.approval.reversal_requires_approval` | `ALWAYS` / `THRESHOLD` / `NEVER` | Default: `ALWAYS`. See [Approval Gatekeeper](../ledger/approval-gatekeeper.md#reversal-approval-policy). |
+| `policy.approval.expiry_days` | `Integer` | Default: `30`. Staged commands older than this are expired. |
+
+### Transfer Policies
+
+| Policy Key | Options / Type | Example |
+| --- | --- | --- |
+| `policy.transfer.auto_receive_days` | `Integer` | Global: `14`. Specific Clinic: `30` |
+| `policy.transfer.loss_writeoff_requires_approval` | `Boolean` | Default: `TRUE`. See [In-Transit Registry](../ledger/in-transit-registry.md#loss-write-off-lost_in_transit). |
+| `policy.transfer.partial_receipt_deadline_days` | `Integer` | Default: `30`. See [In-Transit Registry](../ledger/in-transit-registry.md#partial-receipt-completion). |
+| `policy.transfer.discrepancy_threshold_pct` | `Integer (%)` | Default: `20`. See [In-Transit Registry](../ledger/in-transit-registry.md#discrepancy-escalation). |
+
+### Deferred Policies (Post-MVP)
+
+| Policy Key | Options / Type | Notes |
+| --- | --- | --- |
+| `policy.expiry.reject_expired_receipts` | `Boolean` | Requires `batch_id` and `expiry_date` columns on `inventory_events`. |
 
 ## Related Docs
 

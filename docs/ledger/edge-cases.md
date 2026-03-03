@@ -46,4 +46,4 @@
 
 **Scenario (Lost Shipment):** A truck crashes and goods are destroyed. The ledger remains indefinitely in `OPEN` limbo.
 
-**Recovery / Risk Flag:** We must explicitly model an `UPDATE_IN_TRANSIT_STATUS` command allowing supervisors to mark a transfer as `LOST_IN_TRANSIT`, triggering a write-off `ADJUSTMENT` event from the source facility.
+**Recovery:** A supervisor submits an `UPDATE_IN_TRANSIT_STATUS` command with `status: LOST_IN_TRANSIT`. The system generates an `ADJUSTMENT` event (negative) at the source node with `adjustment_reason: LOSS_IN_TRANSIT`. The write-off is gated by `policy.transfer.loss_writeoff_requires_approval`. See [In-Transit Registry → Loss Write-Off](in-transit-registry.md#loss-write-off-lost_in_transit).

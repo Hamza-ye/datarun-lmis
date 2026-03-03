@@ -33,10 +33,14 @@ When a field worker edits a previously submitted form:
 2. **Generation:** The Guard generates:
    - A `REVERSAL` command for the old state
    - A new command for the new state
-3. **Governance:** Regardless of the original command's threshold, the `REVERSAL` is **immediately parked** in `ledger_staged_commands` with reason "Symmetry of Governance: Reversal of modified transaction."
-4. **Resolution:** A supervisor must approve the undo before the Event Store reverses the original units.
+3. **Governance:** The `REVERSAL` command is evaluated against `policy.approval.reversal_requires_approval` (see [Approval Gatekeeper](approval-gatekeeper.md#reversal-approval-policy)):
+   - `ALWAYS` (default): The reversal is staged for approval regardless of size.
+   - `THRESHOLD`: The reversal is staged only if it exceeds `auto_approve_threshold`.
+   - `NEVER`: The reversal is processed immediately.
 
-> **Principle — Symmetry of Governance:** If the original action required approval, reversing it has equally significant impact and must also require approval.
+> **Invariant:** The Reverse & Replace *mechanism* is non-negotiable in an append-only ledger. There is no other way to correct a historical mis-statement.
+>
+> **Policy:** Whether a reversal requires human approval before execution is a governance choice, configurable per programme. The default (`ALWAYS`) errs on the side of caution.
 
 ## Related Docs
 
