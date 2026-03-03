@@ -12,8 +12,12 @@
             "name": "API Specs",
             "path": "openapi"
         },
+		{
+            "name": "Docs",
+            "path": "docs"
+        },
         {
-            "name": "Project Root (Docs/Config)",
+            "name": "Project Root",
             "path": "."
         }
     ],
