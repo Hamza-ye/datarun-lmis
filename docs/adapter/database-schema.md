@@ -8,14 +8,14 @@ The Adapter owns its own independent database schema. It shares zero tables with
 
 ### `adapter_inbox` — The Unified Inbox
 
-The Store-and-Forward buffer. When a source system pushes data, it immediately lands here. Also serves as the DLQ state machine (no separate DLQ table).
+The Store-and-Forward buffer. When DatarunAPI pushes data (or the Adapter pulls it), it immediately lands here. Also serves as the DLQ state machine (no separate DLQ table).
 
 | Column | Type | Description |
 | --- | --- | --- |
 | `id` | UUID (PK) | Internal Inbox ID |
 | `correlation_id` | UUID | Groups logical retries together |
 | `parent_inbox_id` | UUID (nullable) | Points to previous failed attempt (for replays) |
-| `source_system` | String | e.g., `commcare_mobile` |
+| `source_system` | String | e.g., `datarun_api` |
 | `source_event_id` | String | Unique ID from the source for dedup |
 | `payload` | JSONB | Exact bits submitted by external app (`raw_payload`) |
 | `mapped_payload` | JSONB (nullable) | Exact JSON produced by Layer 2 transformation |
@@ -43,7 +43,7 @@ External dictionary for high-speed lookups during mapping.
 | Column | Type | Description |
 | --- | --- | --- |
 | `id` | UUID (PK) | Primary Key |
-| `namespace` | String | Grouping (e.g., `dhis2_nodes`, `odk_commodities`) |
+| `namespace` | String | Grouping (e.g., `datarun_nodes`, `datarun_commodities`) |
 | `source_value` | String | "Messy" value from external app (e.g., `act_80`) |
 | `internal_id` | String | Clean ID for destination (e.g., `PROD-AL-01`) |
 | `metadata_json` | JSONB | Contextual defaults or multipliers (e.g., `transform_factor`) |

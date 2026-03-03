@@ -23,9 +23,11 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 
 ### [`architecture/`](architecture/) — Cross-Cutting Concerns
 - [System Overview](architecture/system-overview.md) — Vision, bounded context map, deployment model
+- [Context Map](architecture/context-map.md) — DDD strategic relationships between all BCs
+- [Integration Contract — DatarunAPI](architecture/integration-contract-datarunapi.md) — OHS boundary, auth channels, versioning
 - [Configuration Hierarchy](architecture/configuration-hierarchy.md) — 4-level policy resolution cascade
 - [Transaction Types](architecture/transaction-types.md) — The 6 canonical types and lifecycle
-- [Auth & Authorization](architecture/auth-and-authorization.md) — JWT, scopes, RBAC, ActorContext
+- [Auth & Authorization](architecture/auth-and-authorization.md) — Phased strategy, JWT, scopes, RBAC, ActorContext
 
 ### [`adrs/`](adrs/) — Architectural Decision Records
 - [ADR-001: Modular Monolith](adrs/001-modular-monolith.md)
@@ -35,6 +37,7 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 - [ADR-005: Async Workers via Lifespan](adrs/005-async-workers-lifespan.md)
 - [ADR-006: 3-Layer Adapter Pipeline](adrs/006-three-layer-adapter-pipeline.md)
 - [ADR-007: API Composition Strategy](adrs/007-api-composition-strategy.md)
+- [ADR-008: Auth Phased Strategy](adrs/008-auth-phased-strategy.md)
 
 ### [`adapter/`](adapter/) — Adapter Bounded Context (ACL)
 - [Adapter Overview](adapter/adapter-overview.md) — Constitution, 3-layer pipeline, decoupling
@@ -64,8 +67,8 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 ### [`composition/`](composition/) — BFF / Composition Layer
 - [Composition Overview](composition/composition-overview.md) — BFF rules, fault tolerance, partial response
 
-### [`frontend/`](frontend/) — Angular SPA
-- [SPA Architecture](frontend/spa-architecture.md) — Directory structure, smart/dumb, Signals, OpenAPI
+### [`frontend/`](frontend/) — Frontend Architecture
+- [Frontend Architecture](frontend/spa-architecture.md) — Multi-app strategy, SSO, LMIS Angular SPA rules
 
 ---
 

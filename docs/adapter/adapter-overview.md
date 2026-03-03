@@ -2,7 +2,7 @@
 
 ## Role in the Architecture
 
-The Adapter functions as an **Anti-Corruption Layer (ACL)** between flexible Data-Collection inputs and strict domain services. Its responsibilities are structural translation, normalization, and reliable delivery. The Adapter and the Ledger share **zero database tables** — they are completely blind to each other's internal states.
+The Adapter functions as an **Anti-Corruption Layer (ACL)** between **DatarunAPI** (our upstream [Open-Host Service](../architecture/context-map.md)) and strict domain services (Ledger, future CaseMgmt). Its responsibilities are structural translation, normalization, and reliable delivery. The Adapter and the Ledger share **zero database tables** — they are completely blind to each other's internal states.
 
 ## Constitution
 
@@ -40,10 +40,12 @@ The Adapter is a 3-Layer Event Gateway (Ingestion → Transformation → Egress)
 
 ## Decoupling Philosophy
 
+- **The upstream is DatarunAPI**, our own Open-Host Service. The Adapter treats it as an external upstream and never makes assumptions about DatarunAPI's internal model. See [Integration Contract](../architecture/integration-contract-datarunapi.md).
 - The Adapter has its own configuration database. It does not query the Ledger.
 - Crosswalk mappings are configured in the Adapter's own `adapter_crosswalks` table.
 - We can swap out the Ledger entirely; the Adapter just points its URL somewhere else.
-- We can have 10 different Adapters (ODK, DHIS2, custom Web App) — the Ledger doesn't care.
+- Mapping contracts are the declared translation from DatarunAPI's Published Language (submission JSON schema) into domain commands (`LedgerCommand`, future `CaseCommand`).
+- The Adapter authenticates to DatarunAPI via a **service account** ([ADR-008](../adrs/008-auth-phased-strategy.md)).
 
 ## Related Docs
 
@@ -55,3 +57,5 @@ The Adapter is a 3-Layer Event Gateway (Ingestion → Transformation → Egress)
 | Contract lifecycle | [Mapping Contract Lifecycle](mapping-contract-lifecycle.md) |
 | Edge cases | [Adapter Edge Cases](edge-cases.md) |
 | Test fixtures | [Test Fixtures](test-fixtures/) |
+| DatarunAPI integration | [Integration Contract](../architecture/integration-contract-datarunapi.md) |
+| Context Map | [Context Map](../architecture/context-map.md) |

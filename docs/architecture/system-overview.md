@@ -2,7 +2,7 @@
 
 ## Vision
 
-We are building a **domain-oriented ingestion platform** around a shared Data-Collection backbone. The system translates field observations into canonical artifacts consumed by independent Bounded Contexts (Ledger, Inventory, CaseMgmt, etc.). The translation layer is purposely narrow and auditable; it is realized as an Anti-Corruption Layer (ACL) inside the ingestion context.
+We are building a **domain-oriented ingestion platform** around **DatarunAPI**, our own general-purpose data-collection backbone ([Integration Contract](integration-contract-datarunapi.md)). The system translates field submissions into canonical artifacts consumed by independent Bounded Contexts (Ledger, CaseMgmt, etc.). The translation layer is purposely narrow and auditable; it is realized as an Anti-Corruption Layer (ACL) inside the ingestion context. DatarunAPI is treated as an **Open-Host Service** with a **Published Language** — see the [Context Map](context-map.md) for full DDD relationship labels.
 
 ## Architecture Pattern
 
@@ -15,9 +15,9 @@ Key patterns in use:
 - **Backend-for-Frontend (BFF)** for UI composition ([ADR-007](../adrs/007-api-composition-strategy.md))
 
 ```
-          General Data Collection
+  DatarunAPI (OHS + Published Language)
                     ↓
-         Ingestion / ACL Layer (DSL + Mapper)
+     Adapter BC — ACL (DSL + Mapper)
                     ↓
    -----------------------------------
    |        |            |           |
@@ -50,10 +50,25 @@ Each domain owns its DB, UI, roles, and invariants. Domains consume events produ
 | **State** | Stateless pipeline (buffer and forward) | Owns the Event Log and Balances |
 | **Edits/Deletes** | Detects updates & forwards commands | Executes Compensating Transaction math |
 
+## External Systems
+
+| System | Relationship | Notes |
+| --- | --- | --- |
+| **DatarunAPI** (Spring Boot, Java) | **OHS + PL** upstream | Our own platform. Generic data collection. See [Integration Contract](integration-contract-datarunapi.md). |
+| **Flutter Mobile App** (Dart) | DatarunAPI client | Submits to DatarunAPI, no direct LMIS relationship. |
+
+## What This System Is NOT
+
+- **Not an iPaaS.** We don't integrate arbitrary third-party systems. The Adapter translates from one known upstream (DatarunAPI).
+- **Not a replacement for DatarunAPI.** DatarunAPI remains the data-collection platform. LMIS adds domain intelligence (inventory accounting, case management) on top.
+- **Not multi-tenant.** Single deployment per health programme.
+
 ## Related Docs
 
 | Topic | Document |
 | --- | --- |
+| DDD Context Map | [Context Map](context-map.md) |
+| DatarunAPI integration | [Integration Contract](integration-contract-datarunapi.md) |
 | Configuration cascade | [Configuration Hierarchy](configuration-hierarchy.md) |
 | Canonical transaction types | [Transaction Types](transaction-types.md) |
 | Authentication & RBAC | [Auth & Authorization](auth-and-authorization.md) |

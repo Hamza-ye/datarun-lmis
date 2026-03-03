@@ -24,6 +24,9 @@ A "Facility Overview" dashboard needs:
 
 The Composition Layer orchestrates these three calls, merges the responses, and returns a single payload to the frontend.
 
+> [!NOTE]
+> The BFF queries **Adapter, Ledger, and Kernel only**. It never queries DatarunAPI directly. DatarunAPI is upstream of the Adapter — the BFF has no relationship with it. See [Context Map](../architecture/context-map.md).
+
 ## Required Capabilities
 
 - Clean domain APIs for each Bounded Context
@@ -33,4 +36,5 @@ The Composition Layer orchestrates these three calls, merges the responses, and 
 ## Related Docs
 
 - **ADR:** [ADR-007 — API Composition Strategy](../adrs/007-api-composition-strategy.md)
-- **Auth context:** [Architecture → Auth & Authorization](../architecture/auth-and-authorization.md)
+- **Auth context:** [Architecture → Auth & Authorization](../architecture/auth-and-authorization.md) ([ADR-008](../adrs/008-auth-phased-strategy.md))
+- **Context Map:** [Architecture → Context Map](../architecture/context-map.md)

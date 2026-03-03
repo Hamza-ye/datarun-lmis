@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-External systems (like CommCare or DHIS2) send messy, unpredictable data. The Ledger requires strict, mathematically pure commands. We need to isolate the mapping/translation logic from the accounting logic without creating an operational nightmare of deploying 15 microservices for a 5-person IT team.
+The upstream data-collection system (DatarunAPI) sends generic, template-driven submissions. The Ledger requires strict, mathematically pure commands. We need to isolate the mapping/translation logic from the accounting logic without creating an operational nightmare of deploying 15 microservices for a 5-person IT team.
 
 ## Decision
 We will use a **Modular Monolith** architecture.
