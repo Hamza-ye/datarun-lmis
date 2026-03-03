@@ -2,7 +2,7 @@
 
 ## How to Use These Docs
 
-Each folder corresponds to a **Bounded Context** (or cross-cutting concern). When working on a specific part of the system, reference **only** the relevant folder to keep AI context windows small.
+Each folder corresponds to a **Bounded Context** (or cross-cutting concern). When working on a specific part of the system with AI, reference **only** the relevant folder to keep context windows small.
 
 ---
 
@@ -28,6 +28,7 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 - [Configuration Hierarchy](architecture/configuration-hierarchy.md) — 4-level policy resolution cascade
 - [Transaction Types](architecture/transaction-types.md) — The 6 canonical types and lifecycle
 - [Auth & Authorization](architecture/auth-and-authorization.md) — Phased strategy, JWT, scopes, RBAC, ActorContext
+- [Correlation & Traceability](architecture/correlation-traceability.md) — End-to-end ID chain, replay lineage, audit trail
 
 ### [`adrs/`](adrs/) — Architectural Decision Records
 - [ADR-001: Modular Monolith](adrs/001-modular-monolith.md)
