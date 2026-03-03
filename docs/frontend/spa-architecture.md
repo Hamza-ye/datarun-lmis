@@ -5,7 +5,7 @@
 The frontend is built as **multiple standalone applications**, one per Bounded Context that requires a UI. All apps share a single sign-on (SSO) via DatarunAPI's JWKS endpoint.
 
 > [!IMPORTANT]
-> Each frontend app is an independent codebase that talks exclusively to its own BC's API. No frontend app may call another BC's API directly.
+> Each frontend app is an independent codebase. The LMIS SPA calls BFF endpoints for composed reads and domain BC endpoints directly for single-BC operations and writes. No frontend may import another BC's backend code.
 
 ---
 
@@ -13,7 +13,7 @@ The frontend is built as **multiple standalone applications**, one per Bounded C
 
 | App | Purpose | API Target | Status |
 | --- | --- | --- | --- |
-| **LMIS SPA** | Ledger dashboards, adapter monitoring, approvals | LMIS BFF (`/api/composition/*`) | Active development |
+| **LMIS SPA** | Ledger dashboards, adapter monitoring, approvals | BFF for composed reads; domain BC endpoints for single-BC ops | Active development |
 | **DatarunAPI Admin** | Template editor, activity config, user management, assignments | DatarunAPI REST API | Future (DatarunAPI currently has no web frontend) |
 | **Future BC UIs** | CaseMgmt, Analytics, etc. | Each BC's own API | Future |
 

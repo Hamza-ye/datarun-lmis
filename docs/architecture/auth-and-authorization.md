@@ -54,13 +54,18 @@ Only generic, domain-agnostic claims. DatarunAPI doesn't know what a "ledger" or
 
 ### What LMIS Adds (Authorization)
 
-LMIS maintains its own `lmis_user_permissions` table, keyed by the `sub` (user ID) from the token:
+LMIS maintains its own `lmis_user_permissions` table in the **LMIS database** (not DatarunAPI's DB), keyed by the `sub` (user ID) from the token:
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `user_id` | UUID | Matches JWT `sub` claim |
-| `lmis_roles` | Array | e.g., `["ledger_supervisor", "adapter_admin"]` |
-| `allowed_nodes` | Array | e.g., `["DIST-A", "CLINIC_1"]` |
+| `id` | UUID (PK) | Primary key |
+| `user_id` | UUID (Unique) | Matches JWT `sub` claim from DatarunAPI |
+| `display_name` | String | Cached from JWT `name` for admin convenience |
+| `lmis_roles` | JSONB | e.g., `["ledger_supervisor", "adapter_admin"]` |
+| `allowed_nodes` | JSONB | e.g., `["DIST-A", "CLINIC_1"]` |
+| `is_active` | Boolean | Can be deactivated without touching DatarunAPI |
+| `created_at` | Timestamp | When this LMIS permission was created |
+| `updated_at` | Timestamp | Last permission change |
 
 When a request arrives:
 1. **Validate JWT** signature via DatarunAPI's JWKS → proves identity.

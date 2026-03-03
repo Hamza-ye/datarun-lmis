@@ -62,8 +62,8 @@ graph TB
 | **Adapter** | **Ledger** | **Customer–Supplier** | Ledger owns `LedgerCommand` schema (Published Language). Adapter conforms. | Synchronous HTTP POST. Ledger has no knowledge of the Adapter. |
 | **Kernel** | **Ledger** | **Shared Kernel** | Co-owned within the Python monolith. | Ledger reads Kernel registries (nodes, commodities, policies) via direct DB access. |
 | **Kernel** | **Future BCs** | **Shared Kernel** | Co-owned. | Same pattern extends to CaseMgmt, Inventory Analytics, etc. |
-| **BFF** | **All BCs** | **Composition** (read-only) | BFF conforms to each BC's read models. | BFF never writes to any BC. Queries Adapter + Ledger + Kernel. |
-| **Frontend** | **BFF** | **Presentation** | BFF defines the aggregated API. | SPA never calls domain BCs directly. |
+| **BFF** | **All BCs** | **Composition** (read-only) | BFF conforms to each BC's read models. | Aggregates multi-BC reads only. Never writes. Never proxies single-BC operations. |
+| **Frontend** | **BFF + Domain BCs** | **Presentation** | Each BC defines its own HTTP API. BFF defines composed views. | SPA calls BFF for multi-BC reads; calls domain BC endpoints directly for single-BC reads and writes. |
 | **DatarunAPI** | **All LMIS services** | **Identity Provider** | DatarunAPI owns user identity. LMIS owns authorization. | SSO via JWKS. No LMIS vocabulary in JWT. |
 
 ---
@@ -82,14 +82,15 @@ graph TB
 1. **No BC imports another BC's Python classes.** Enforced by modular monolith structure.
 2. **DatarunAPI never contains LMIS vocabulary** (stock, commodity, ledger). It stays generic.
 3. **The Ledger never knows who called it.** It processes `LedgerCommand`s. Period.
-4. **The BFF never writes** to any domain BC. Read-only aggregation.
-5. **Adding a new downstream BC** (e.g., CaseMgmt) requires only:
+4. **The BFF is for composed reads only.** It aggregates multi-BC queries. Single-BC reads and all writes go directly to the domain BC's own HTTP endpoint. The BFF never proxies writes.
+5. **The SPA never imports BC Python code.** Isolation is at the code-import level, not the HTTP-routing level. Every BC exposes its own HTTP API; the SPA calls them directly for single-BC operations.
+6. **Adding a new downstream BC** (e.g., CaseMgmt) requires only:
    - A new Adapter mapping contract (or new Adapter variant)
    - New entry in this Context Map
    - New BFF aggregation routes
    - No changes to existing BCs.
-6. **Identity = DatarunAPI, Authorization = LMIS.** DatarunAPI's JWT contains only generic claims (`sub`, `name`). LMIS-specific roles and node access live in `lmis_user_permissions`.
-7. **Each BC can have its own UI.** DatarunAPI admin, LMIS SPA, future BC frontends are separate apps sharing SSO via JWKS.
+7. **Identity = DatarunAPI, Authorization = LMIS.** DatarunAPI's JWT contains only generic claims (`sub`, `name`). LMIS-specific roles and node access live in `lmis_user_permissions`.
+8. **Each BC can have its own UI.** DatarunAPI admin, LMIS SPA, future BC frontends are separate apps sharing SSO via JWKS.
 
 ## Related Docs
 
