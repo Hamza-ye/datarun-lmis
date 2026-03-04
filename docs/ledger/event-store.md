@@ -6,7 +6,7 @@ The mathematical heart of the system. Area C enforces stock rules, appends immut
 
 ## The Event Store (Write Model)
 
-**Table:** `inventory_events` — Permanent, append-only ledger of all stock movements.
+**Table:** `ledger_inventory_events` — Permanent, append-only ledger of all stock movements.
 
 | Column | Type | Description |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ The mathematical heart of the system. Area C enforces stock rules, appends immut
 
 ## Stock Projections (Read Model)
 
-**Table:** `stock_balances` — Fast lookup for current "Stock on Hand."
+**Table:** `ledger_stock_balances` — Fast lookup for current "Stock on Hand."
 
 | Column | Type | Description |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Prevents race conditions when two commands affect the same `node_id` + `item_id`
 
 1. **Read:** `quantity: 100, version: 5`
 2. **Math:** RECEIPT of 10 → target `quantity: 110, version: 6`
-3. **Atomic Update:** `UPDATE stock_balances SET quantity = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5`
+3. **Atomic Update:** `UPDATE ledger_stock_balances SET quantity = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5`
 4. **Guard:** If another thread updated to version 6 first, our `WHERE version = 5` affects 0 rows.
 5. **Retry:** Throws `StaleObjectException`, re-reads, recalculates, commits.
 
@@ -51,8 +51,8 @@ Prevents race conditions when two commands affect the same `node_id` + `item_id`
 1. **Input:** `Node: A, Item: X, Counted_Qty: 100`
 2. **Projection Lookup:** `stock_balances` shows `quantity_on_hand: 120`
 3. **Variance:** `100 - 120 = -20`
-4. **Event Generated:** `transaction_type: ADJUSTMENT`, `quantity: -20`
-5. **Projection Updated:** `stock_balances` updated to `100`
+4. **Event Generated:** `transaction_type: STOCK_COUNT`, `quantity: -20`, `adjustment_reason: STOCK_COUNT_VARIANCE`
+5. **Projection Updated:** `ledger_stock_balances` updated to `100`
 
 ## Handling Reversals (Correction Flow)
 
@@ -72,7 +72,7 @@ During commit, the Ledger evaluates the Configuration Hierarchy policies:
 
 ## Atomicity Guarantee
 
-The `inventory_events` insert and the `stock_balances` update happen in a **single Database Transaction**. Either both succeed, or both fail.
+The `ledger_inventory_events` insert and the `ledger_stock_balances` update happen in a **single Database Transaction**. Either both succeed, or both fail.
 
 ## Temporal Ordering
 

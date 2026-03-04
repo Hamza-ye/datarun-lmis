@@ -30,9 +30,9 @@ The Store-and-Forward buffer. When DatarunAPI pushes data (or the Adapter pulls 
 
 **Partial Index (Performance):**
 ```sql
-CREATE INDEX idx_inbox_pending ON adapter_inbox (status) WHERE status IN ('RECEIVED', 'RETRY_EGRESS');
+CREATE INDEX idx_inbox_pending ON adapter_inbox (status) WHERE status IN ('RECEIVED', 'MAPPED', 'RETRY_EGRESS');
 ```
-Guarantees sub-millisecond polling in tables with millions of forwarded/failed rows.
+Guarantees sub-millisecond polling in tables with millions of forwarded/failed rows. Includes `MAPPED` because the Layer 3 egress worker polls for both `MAPPED` and `RETRY_EGRESS` rows.
 
 ---
 
@@ -72,6 +72,9 @@ Stores the pure JSON DSL that powers the transformation engine.
 | `status` | Enum | `DRAFT`, `REVIEW`, `APPROVED`, `ACTIVE`, `DEPRECATED`, `REJECTED` |
 | `visible_in_ui` | Boolean | Default `TRUE`. Set to `FALSE` to hide from active UI (replaces the former `ARCHIVED` status). |
 | `dsl_config` | JSONB | The JSON DSL config blob |
+| `sample_in` | JSONB (nullable) | Sample input payload for contract testing |
+| `expected_out` | JSONB (nullable) | Expected output for contract validation |
+| `test_result_metadata` | JSONB (nullable) | Results from the last test run |
 | `created_at` | Timestamp | Record creation time |
 
 ---
@@ -82,15 +85,17 @@ Immutable record of every Layer 3 delivery attempt.
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `run_id` | UUID (PK) | Unique run identifier |
+| `id` | UUID (PK) | Unique log entry identifier |
 | `inbox_id` | UUID (FK) | Link to `adapter_inbox` |
-| `contract_version_id` | String | Mapping rules version used |
-| `status` | Enum | `SUCCESS`, `FAILED_MAPPING`, `FAILED_DESTINATION` |
-| `destination_http_code` | Integer | HTTP status code returned |
-| `destination_response` | Text | Exact JSON response from destination |
-| `retry_count` | BigInteger | Number of delivery attempts |
-| `delivery_time_ms` | BigInteger | Performance tracking |
-| `execution_time_ms` | BigInteger | Total processing time |
+| `contract_version_id` | String (nullable) | Mapping rules version used |
+| `destination_url` | String | Target URL for the delivery attempt |
+| `request_payload` | JSONB | Exact payload sent (denormalized for audit — survives inbox reprocessing) |
+| `destination_http_code` | Integer (nullable) | HTTP status code returned (`NULL` on network error) |
+| `destination_response` | Text (nullable) | Exact response from destination |
+| `status` | String (nullable) | `SUCCESS`, `FAILED`, `TIMEOUT`, `NETWORK_ERROR` |
+| `retry_count` | Integer | Number of delivery attempts |
+| `execution_time_ms` | Integer (nullable) | Total processing time (ms) |
+| `created_at` | Timestamp | When the delivery attempt was logged |
 
 ---
 
@@ -101,9 +106,11 @@ Tracks bulk admin operations (e.g., reprocessing 500 DLQ records).
 | Column | Type | Description |
 | --- | --- | --- |
 | `id` | UUID (PK) | Job ID |
-| `job_type` | String | `REPLAY`, `BULK_DELETE` |
-| `triggered_by` | String | Actor ID |
-| `affected_records_count` | Integer | Total records targeted |
-| `success_count` | Integer | Successfully processed |
-| `failure_count` | Integer | Failed during reprocessing |
+| `job_type` | String | `CROSSWALK_IMPORT`, `BULK_REPLAY`, `BULK_DELETE` |
+| `status` | String | `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` |
+| `submitted_by` | String (nullable) | Actor ID of the user who triggered the job |
+| `parameters` | JSONB (nullable) | Input parameters (e.g., filter criteria, file path) |
+| `result_summary` | JSONB (nullable) | Output results (e.g., `{"processed": 500, "failed": 3}`) |
+| `error_message` | String (nullable) | Error details if job failed |
 | `created_at` | Timestamp | When the job was triggered |
+| `updated_at` | Timestamp | Last status change |

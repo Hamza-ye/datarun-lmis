@@ -46,4 +46,4 @@
 
 **Scenario (Lost Shipment):** A truck crashes and goods are destroyed. The ledger remains indefinitely in `OPEN` limbo.
 
-**Recovery:** A supervisor submits an `UPDATE_IN_TRANSIT_STATUS` command with `status: LOST_IN_TRANSIT`. The system generates an `ADJUSTMENT` event (negative) at the source node with `adjustment_reason: LOSS_IN_TRANSIT`. The write-off is gated by `policy.transfer.loss_writeoff_requires_approval`. See [In-Transit Registry → Loss Write-Off](in-transit-registry.md#loss-write-off-lost_in_transit).
+**Recovery:** A supervisor submits a `LedgerCommand` with `transaction_type: ADJUSTMENT`, `adjustment_reason: 'LOSS_IN_TRANSIT'`, and the `transfer_id`. The router detects this pattern and routes to `process_loss()`. The system generates a zero-quantity `ADJUSTMENT` event at the source node (zero because dispatch already deducted) and marks the transfer as `LOST_IN_TRANSIT`. Gated by `policy.transfer.loss_writeoff_requires_approval`. See [In-Transit Registry → Loss Write-Off](in-transit-registry.md#loss-write-off-lost_in_transit).
