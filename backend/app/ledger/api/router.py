@@ -94,7 +94,8 @@ async def submit_ledger_command(
         ):
             await InTransitService.process_receipt(db, command, command.transfer_id)
         elif (
-            command.transaction_type == TransactionType.LOSS_IN_TRANSIT
+            command.transaction_type == TransactionType.ADJUSTMENT
+            and command.adjustment_reason == "LOSS_IN_TRANSIT"
             and command.transfer_id
         ):
             await InTransitService.process_loss(db, command, command.transfer_id)
