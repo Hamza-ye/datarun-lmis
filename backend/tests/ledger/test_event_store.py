@@ -187,3 +187,26 @@ async def test_adjustment_reason_null_for_non_adjustment(db_session):
     event = await EventStoreService.commit_command(db_session, cmd)
 
     assert event.adjustment_reason is None
+
+
+@pytest.mark.asyncio
+async def test_stock_count_auto_populates_adjustment_reason(db_session):
+    """STOCK_COUNT events without an explicit adjustment_reason default to STOCK_COUNT_VARIANCE."""
+    # Seed with stock
+    cmd1 = base_command(TransactionType.RECEIPT, 100, "SEED_SC")
+    await EventStoreService.commit_command(db_session, cmd1)
+
+    # STOCK_COUNT without adjustment_reason
+    cmd2 = LedgerCommand(
+        source_event_id="SC_AUTO_REASON",
+        version_timestamp=1,
+        transaction_type=TransactionType.STOCK_COUNT,
+        node_id="NODE_A",
+        item_id="ITEM_X",
+        quantity=80,
+        occurred_at=datetime.datetime.now(datetime.timezone.utc),
+    )
+    event = await EventStoreService.commit_command(db_session, cmd2)
+
+    assert event.adjustment_reason == "STOCK_COUNT_VARIANCE"
+    assert event.quantity == -20  # variance: 80 - 100

@@ -86,6 +86,14 @@ class EventStoreService:
                 balance_record.quantity = new_qty
 
                 # 5. Write Immutable Event Record
+                # Auto-populate adjustment_reason for stock counts
+                reason = command.adjustment_reason
+                if (
+                    command.transaction_type == TransactionType.STOCK_COUNT
+                    and not reason
+                ):
+                    reason = "STOCK_COUNT_VARIANCE"
+
                 event_log = InventoryEvent(
                     source_event_id=command.source_event_id,
                     transaction_type=command.transaction_type.value,
@@ -93,7 +101,7 @@ class EventStoreService:
                     item_id=command.item_id,
                     quantity=delta,
                     running_balance=new_qty,
-                    adjustment_reason=command.adjustment_reason,
+                    adjustment_reason=reason,
                     occurred_at=command.occurred_at,
                 )
                 session.add(event_log)
