@@ -9,12 +9,20 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Add the 'backend' directory to sys.path so 'app' and 'core' can be found
 sys.path.append(str(Path(__file__).parent.parent))
-# CRITICAL: Import ALL modular models so Alembic can detect them
+
+# CRITICAL: Import ALL modular models so Alembic's autogenerate can detect them
 # Adapter Models
+import app.adapter.models.engine  # noqa: F401
 
 # Kernel Models
+import app.kernel.models.policy  # noqa: F401
+import app.kernel.models.registry  # noqa: F401
 
 # Ledger Models
+import app.ledger.models.event_store  # noqa: F401
+import app.ledger.models.gatekeeper  # noqa: F401
+import app.ledger.models.idempotency  # noqa: F401
+import app.ledger.models.in_transit  # noqa: F401
 from alembic import context
 
 # IMPORT THE APP SETTINGS
