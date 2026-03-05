@@ -24,7 +24,7 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 ### [`architecture/`](architecture/) — Cross-Cutting Concerns
 - [System Overview](architecture/system-overview.md) — Vision, bounded context map, deployment model
 - [Context Map](architecture/context-map.md) — DDD strategic relationships between all BCs
-- [Integration Contract — DatarunAPI](architecture/integration-contract-datarunapi.md) — OHS boundary, auth channels, versioning
+- [Integration Contract — DatarunAPI](architecture/integration-contract-datarunapi.md) — OHS boundary, auth channels, versioning, V2 Published Language
 - [Configuration Hierarchy](architecture/configuration-hierarchy.md) — 4-level policy resolution cascade
 - [Transaction Types](architecture/transaction-types.md) — The 6 canonical types and lifecycle
 - [Auth & Authorization](architecture/auth-and-authorization.md) — Phased strategy, JWT, scopes, RBAC, ActorContext
@@ -69,7 +69,13 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 - [Composition Overview](composition/composition-overview.md) — BFF rules, fault tolerance, partial response
 
 ### [`frontend/`](frontend/) — Frontend Architecture
-- [Frontend Architecture](frontend/spa-architecture.md) — Multi-app strategy, SSO, LMIS Angular SPA rules
+- [LMIS SPA Architecture](frontend/spa-architecture.md) — Multi-app strategy, SSO, LMIS Angular SPA rules
+- **DatarunAPI Web Frontend:**
+  - [Overview](frontend/datarunapi-frontend/overview.md) — Architecture, modules, layers, folder layout
+  - [Form Engine Contract](frontend/datarunapi-frontend/form-engine.md) — Headless engine API, state model, rule evaluation
+
+### V2 Contract (DatarunAPI Evolution)
+- [V2 Contract Discussion](form_template_and_submission_v2_contract_discussion.md) — Comprehensive V2 spec: submission shape, template tree, ACL, migration
 
 ---
 

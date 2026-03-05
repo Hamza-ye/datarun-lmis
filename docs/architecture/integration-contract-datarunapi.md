@@ -76,6 +76,72 @@ Keycloak replaces DatarunAPI as identity provider. LMIS authorization layer stay
 
 ---
 
+## V2 Published Language (Normalized Contracts)
+
+DatarunAPI is introducing a V2 API alongside V1. The V2 Published Language uses **normalized contracts** that decouple data from UI layout.
+
+### Two New Contract Shapes
+
+| Contract | V1 Shape | V2 Shape | Reference |
+|---|---|---|---|
+| **Submission** | Section-wrapped JSON (`{ main: {…}, medicines: [{…}] }`) with arrays for repeaters | Flat `values` + identity-keyed `collections` maps | [V2 Contract §4](../form_template_and_submission_v2_contract_discussion.md#4-v2-submission-contract) |
+| **Template** | Two flat arrays: `sections[]` + `fields[]` linked by `parent` string | Nested tree with typed nodes, `binding` semantics | [V2 Contract §5](../form_template_and_submission_v2_contract_discussion.md#5-v2-template-tree-contract) |
+
+### What Changes for Downstream BCs
+
+The V2 submission shape is structurally different from V1. A downstream BC (e.g., the Adapter) that switches from V1 to V2 must update its **mapping contract** to target the new JSON paths:
+
+| V1 Path | V2 Path |
+|---|---|
+| `formData.main.visitdate` | `values.visitdate` |
+| `formData.medicines[0].amd` | `collections.medicines.<row_id>.amd` |
+
+No other changes are required — the Adapter's 3-layer pipeline, auth, and egress remain identical.
+
+---
+
+## V1 / V2 Coexistence
+
+V1 and V2 endpoints run simultaneously on DatarunAPI. Both read from and write to the **same canonical store**.
+
+```
+Mobile (V1 consumer)  ──► V1 REST ──► Internal Translator ──► Canonical Store
+                                                                    ▲
+Web Frontend (V2 consumer) ──► V2 REST ──── passthrough ────────────┘
+```
+
+### Key Rules
+
+1. **V1 endpoints are unchanged.** Mobile app continues to work without modification.
+2. **V2 endpoints speak the canonical shape natively.** No translation overhead.
+3. **The internal translator is NOT an API.** It lives inside DatarunAPI's service layer. External consumers never see it.
+4. **No dual-write.** Single canonical store. V1 reads trigger on-the-fly denormalization.
+
+### What Does NOT Change Between V1 and V2
+
+| Stable | Detail |
+|---|---|
+| Auth (JWKS) | Same JWT, same endpoint, same validation |
+| Entity UIDs | `submission.uid`, `template.uid` remain 11-char stable identifiers |
+| Submission identity | `uid` + `serialNumber` are unchanged |
+| API path prefix | V1: `/api/v1/*`, V2: `/api/v2/*` |
+
+---
+
+## Downstream BC Migration Path
+
+Downstream BCs (e.g., the LMIS Adapter) are **not required** to migrate to V2. The path is:
+
+1. **Today:** Adapter consumes V1 via existing mapping contracts. No change needed.
+2. **When ready:** Adapter creates new mapping contract versions targeting V2 schema. Old contracts remain `ACTIVE` for V1.
+3. **Transition:** Both contract versions can coexist. The Adapter can route some templates to V1 contracts and others to V2.
+4. **Completion:** Once all templates are covered by V2 contracts, V1 contracts are deprecated. V1 API endpoints remain available until all consumers have migrated.
+
+> [!IMPORTANT]
+> DatarunAPI never forces a V2 migration on downstream BCs. Each BC migrates on its own schedule by updating its own mapping contracts.
+
+---
+
 ## Constraints & Known Limitations
 
 1. **No real-time push (yet).** The Adapter currently pulls submissions via polling or scheduled sync. Webhooks are a planned enhancement.

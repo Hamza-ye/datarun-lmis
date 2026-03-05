@@ -14,7 +14,7 @@ The frontend is built as **multiple standalone applications**, one per Bounded C
 | App | Purpose | API Target | Status |
 | --- | --- | --- | --- |
 | **LMIS SPA** | Ledger dashboards, adapter monitoring, approvals | BFF for composed reads; domain BC endpoints for single-BC ops | Active development |
-| **DatarunAPI Admin** | Template editor, activity config, user management, assignments | DatarunAPI REST API | Future (DatarunAPI currently has no web frontend) |
+| **DatarunAPI Web Frontend** | Template designer, data capture, submission review, user/assignment management | DatarunAPI V2 REST API | Architecture defined. See [DatarunAPI Frontend](datarunapi-frontend/overview.md). |
 | **Future BC UIs** | CaseMgmt, Analytics, etc. | Each BC's own API | Future |
 
 ### Why Multiple Apps (Not One Big SPA)
